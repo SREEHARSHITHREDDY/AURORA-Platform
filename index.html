@@ -1,135 +1,1040 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>AURORA — AI Business Intelligence Platform</title>
-  <link rel="stylesheet" href="css/style.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
-  <script src="https://kit.fontawesome.com/a2e8c152f3.js" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="css/style.css"/>
+  <style>
+    /* ---- LANDING PAGE SPECIFIC ---- */
+    body { cursor: none; }
+
+    /* Custom Cursor */
+    #cursor { position:fixed; width:8px; height:8px; background:var(--blue); border-radius:50%; pointer-events:none; z-index:9999; transform:translate(-50%,-50%); transition:width .2s,height .2s,background .2s; }
+    #cursor-ring { position:fixed; width:36px; height:36px; border:1px solid rgba(79,139,255,0.45); border-radius:50%; pointer-events:none; z-index:9998; transform:translate(-50%,-50%); transition:width .3s,height .3s,border-color .3s; }
+    #cursor.hover { width:14px; height:14px; background:var(--violet); }
+    #cursor-ring.hover { width:52px; height:52px; border-color:rgba(139,92,246,0.5); }
+
+    /* Noise */
+    .noise { position:fixed; inset:0; pointer-events:none; z-index:999; opacity:0.4;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 300 300' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    }
+
+    /* Grid BG */
+    .grid-bg {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background-image:
+        linear-gradient(rgba(79,139,255,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(79,139,255,0.04) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%);
+    }
+
+    /* Ambient glow orbs */
+    .orb {
+      position: fixed; border-radius: 50%;
+      pointer-events: none; z-index: 0;
+      filter: blur(80px); opacity: 0.35;
+      animation: float 8s ease-in-out infinite;
+    }
+    .orb-1 { width:400px; height:400px; background:rgba(79,139,255,0.25); top:-10%; left:-5%; animation-delay:0s; }
+    .orb-2 { width:300px; height:300px; background:rgba(139,92,246,0.2); top:40%; right:-8%; animation-delay:-3s; }
+    .orb-3 { width:250px; height:250px; background:rgba(34,211,238,0.12); bottom:10%; left:30%; animation-delay:-5s; }
+
+    /* NAVBAR overrides for landing */
+    .navbar { background: rgba(7,9,15,0); border-bottom-color: transparent; }
+    .navbar.scrolled { background: rgba(7,9,15,0.92); border-bottom-color: var(--border); }
+
+    /* ---- HERO ---- */
+    .hero {
+      position: relative; z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 100px 48px 80px;
+      overflow: hidden;
+    }
+    .hero-inner {
+      max-width: 860px;
+      width: 100%;
+      text-align: center;
+    }
+
+    /* Badge */
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 18px;
+      background: rgba(79,139,255,0.08);
+      border: 1px solid rgba(79,139,255,0.2);
+      border-radius: 40px;
+      font-size: 12px;
+      color: var(--blue);
+      letter-spacing: 0.5px;
+      margin-bottom: 32px;
+      animation: fadeSlideUp 0.8s ease both;
+    }
+    .eyebrow-dot {
+      width: 6px; height: 6px;
+      background: var(--blue);
+      border-radius: 50%;
+      animation: pulse-ring 1.5s ease-out infinite;
+    }
+
+    /* Headline */
+    .hero-title {
+      font-family: var(--font-head);
+      font-size: clamp(40px, 6vw, 76px);
+      font-weight: 800;
+      line-height: 1.08;
+      letter-spacing: -2px;
+      color: var(--text);
+      margin-bottom: 24px;
+      animation: fadeSlideUp 0.8s 0.1s ease both;
+    }
+    .hero-title .line-2 {
+      background: linear-gradient(135deg, var(--blue) 0%, var(--violet) 50%, var(--cyan) 100%);
+      background-size: 200% 200%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: fadeSlideUp 0.8s 0.1s ease both, gradient-shift 4s ease infinite;
+    }
+
+    /* Subheadline */
+    .hero-sub {
+      font-size: clamp(15px, 1.8vw, 18px);
+      color: var(--muted);
+      max-width: 560px;
+      margin: 0 auto 44px;
+      line-height: 1.75;
+      font-weight: 300;
+      animation: fadeSlideUp 0.8s 0.2s ease both;
+    }
+
+    /* CTA */
+    .hero-cta {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      margin-bottom: 64px;
+      animation: fadeSlideUp 0.8s 0.3s ease both;
+    }
+    .btn-hero {
+      padding: 16px 36px;
+      font-size: 15px;
+      font-weight: 600;
+      border-radius: 14px;
+      position: relative;
+    }
+    .btn-hero-primary {
+      background: var(--blue);
+      color: #fff;
+      box-shadow: 0 0 0 0 var(--blue-glow), inset 0 1px 0 rgba(255,255,255,0.15);
+      transition: all 0.3s;
+    }
+    .btn-hero-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px var(--blue-glow), inset 0 1px 0 rgba(255,255,255,0.15);
+    }
+    .btn-hero-secondary {
+      background: var(--surface);
+      color: var(--text2);
+      border: 1px solid var(--border2);
+      transition: all 0.3s;
+    }
+    .btn-hero-secondary:hover {
+      border-color: var(--border3);
+      color: var(--text);
+      transform: translateY(-1px);
+    }
+    .btn-arrow { transition: transform 0.2s; }
+    .btn-hero-primary:hover .btn-arrow { transform: translateX(4px); }
+
+    /* Social proof */
+    .hero-proof {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 32px;
+      animation: fadeSlideUp 0.8s 0.4s ease both;
+    }
+    .proof-stat { text-align: center; }
+    .proof-num {
+      font-family: var(--font-head);
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text);
+      display: block;
+    }
+    .proof-label { font-size: 12px; color: var(--muted); }
+    .proof-div { width: 1px; height: 32px; background: var(--border2); }
+
+    /* ---- FLOATING DASHBOARD ---- */
+    .hero-dashboard-wrap {
+      position: relative; z-index: 1;
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 48px 100px;
+      animation: fadeSlideUp 0.8s 0.5s ease both;
+    }
+    .dashboard-mock {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 40px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04);
+      position: relative;
+    }
+    .dashboard-mock::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(79,139,255,0.5), transparent);
+    }
+    .mock-topbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 20px;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+    }
+    .mock-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .mock-dot.r { background: #ef4444; }
+    .mock-dot.y { background: #f59e0b; }
+    .mock-dot.g { background: #10b981; }
+    .mock-url {
+      flex: 1; margin-left: 12px;
+      background: var(--surface3);
+      border-radius: 6px;
+      padding: 5px 12px;
+      font-size: 11px;
+      color: var(--dim);
+      max-width: 280px;
+    }
+    .mock-body {
+      display: grid;
+      grid-template-columns: 180px 1fr;
+    }
+    .mock-sidebar {
+      background: var(--bg2);
+      border-right: 1px solid var(--border);
+      padding: 16px 12px;
+    }
+    .mock-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      color: var(--dim);
+      margin-bottom: 2px;
+    }
+    .mock-nav-item.a { background: var(--blue-dim); color: var(--blue); }
+    .mock-nav-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+    .mock-main { padding: 20px; }
+    .mock-stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .mock-stat {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+    }
+    .mock-stat-val {
+      font-family: var(--font-head);
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 3px;
+    }
+    .mock-stat-lbl { font-size: 10px; color: var(--dim); }
+    .mock-charts {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 10px;
+    }
+    .mock-chart-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      height: 100px;
+      display: flex;
+      flex-direction: column;
+    }
+    .mock-chart-title { font-size: 10px; color: var(--dim); margin-bottom: 8px; }
+    .mock-bars {
+      flex: 1;
+      display: flex;
+      align-items: flex-end;
+      gap: 5px;
+    }
+    .mock-bar {
+      flex: 1;
+      background: rgba(79,139,255,0.25);
+      border-radius: 3px 3px 0 0;
+      transition: height 1s ease;
+    }
+    .mock-bar.hi { background: var(--blue); }
+    .mock-strategy-box {
+      background: rgba(139,92,246,0.08);
+      border: 1px solid rgba(139,92,246,0.2);
+      border-radius: 10px;
+      padding: 12px;
+      margin-top: 10px;
+    }
+    .mock-strategy-title { font-size: 10px; color: var(--violet); margin-bottom: 6px; font-weight: 600; }
+    .mock-strategy-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+      color: var(--dim);
+      margin-bottom: 4px;
+    }
+    .mock-strategy-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ---- SECTION SHARED ---- */
+    section { position: relative; z-index: 1; }
+    .section-wrap { max-width: 1100px; margin: 0 auto; padding: 0 48px; }
+
+    .section-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      margin-bottom: 16px;
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      color: var(--muted);
+    }
+    .section-title {
+      font-family: var(--font-head);
+      font-size: clamp(28px, 3vw, 42px);
+      font-weight: 700;
+      letter-spacing: -1px;
+      line-height: 1.15;
+      color: var(--text);
+      margin-bottom: 14px;
+    }
+    .section-sub {
+      font-size: 16px;
+      color: var(--muted);
+      max-width: 500px;
+      line-height: 1.7;
+      font-weight: 300;
+    }
+    .section-header { margin-bottom: 52px; }
+
+    /* ---- FEATURES ---- */
+    .features-section { padding: 60px 0 100px; }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      overflow: hidden;
+    }
+    .feature-item {
+      background: var(--surface);
+      padding: 32px 28px;
+      transition: background var(--t);
+      position: relative;
+      overflow: hidden;
+    }
+    .feature-item::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 0% 0%, var(--blue-dim) 0%, transparent 60%);
+      opacity: 0;
+      transition: opacity var(--t);
+    }
+    .feature-item:hover { background: var(--surface2); }
+    .feature-item:hover::before { opacity: 1; }
+
+    .feature-num {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--dim);
+      letter-spacing: 1px;
+      margin-bottom: 20px;
+    }
+    .feature-icon-wrap {
+      width: 44px; height: 44px;
+      border-radius: var(--r);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      margin-bottom: 16px;
+      border: 1px solid var(--border2);
+      background: var(--surface2);
+      transition: all var(--t);
+    }
+    .feature-item:hover .feature-icon-wrap {
+      border-color: var(--blue);
+      background: var(--blue-dim);
+    }
+    .feature-name {
+      font-family: var(--font-head);
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    .feature-desc { font-size: 13px; color: var(--muted); line-height: 1.7; }
+
+    /* ---- HOW IT WORKS ---- */
+    .how-section { padding: 80px 0; }
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0;
+      position: relative;
+    }
+    .steps-grid::before {
+      content: '';
+      position: absolute;
+      top: 28px; left: 12.5%; right: 12.5%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border2), var(--border2), transparent);
+      z-index: 0;
+    }
+    .step-item {
+      padding: 0 24px;
+      text-align: center;
+      position: relative; z-index: 1;
+    }
+    .step-num {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-head);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      margin: 0 auto 20px;
+      transition: all var(--t);
+    }
+    .step-item:hover .step-num {
+      background: var(--blue-dim);
+      border-color: var(--blue);
+      color: var(--blue);
+      box-shadow: 0 0 20px var(--blue-dim);
+    }
+    .step-name { font-family: var(--font-head); font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
+    .step-desc { font-size: 12px; color: var(--muted); line-height: 1.6; }
+
+    /* ---- METRICS STRIP ---- */
+    .metrics-section { padding: 60px 0; }
+    .metrics-strip {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+    }
+    .metric-item {
+      padding: 36px 32px;
+      border-right: 1px solid var(--border);
+      text-align: center;
+    }
+    .metric-item:last-child { border-right: none; }
+    .metric-val {
+      font-family: var(--font-head);
+      font-size: 36px;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+    .metric-val span { color: var(--blue); }
+    .metric-label { font-size: 13px; color: var(--muted); }
+
+    /* ---- TESTIMONIALS ---- */
+    .testimonials-section { padding: 80px 0; }
+    .testimonials-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+    .testimonial-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-xl);
+      padding: 28px;
+      transition: all var(--t);
+    }
+    .testimonial-card:hover {
+      border-color: var(--border2);
+      transform: translateY(-3px);
+      box-shadow: var(--shadow);
+    }
+    .testimonial-stars { color: var(--amber); font-size: 12px; margin-bottom: 14px; letter-spacing: 2px; }
+    .testimonial-text { font-size: 13px; color: var(--text2); line-height: 1.8; margin-bottom: 20px; font-style: italic; }
+    .testimonial-author { display: flex; align-items: center; gap: 10px; }
+    .author-avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 700; color: #fff;
+      flex-shrink: 0;
+    }
+    .author-name { font-size: 13px; font-weight: 600; color: var(--text); }
+    .author-role { font-size: 11px; color: var(--muted); }
+
+    /* ---- CTA BANNER ---- */
+    .cta-section { padding: 80px 0 120px; }
+    .cta-box {
+      background: linear-gradient(135deg, rgba(79,139,255,0.08) 0%, rgba(139,92,246,0.08) 100%);
+      border: 1px solid rgba(79,139,255,0.2);
+      border-radius: 28px;
+      padding: 72px 48px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .cta-box::before {
+      content: '';
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 500px; height: 300px;
+      background: radial-gradient(ellipse, rgba(79,139,255,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .cta-box h2 {
+      font-family: var(--font-head);
+      font-size: clamp(28px, 3.5vw, 46px);
+      font-weight: 700;
+      letter-spacing: -1.5px;
+      margin-bottom: 16px;
+      position: relative; z-index: 1;
+    }
+    .cta-box p {
+      font-size: 16px;
+      color: var(--muted);
+      max-width: 440px;
+      margin: 0 auto 36px;
+      line-height: 1.7;
+      position: relative; z-index: 1;
+    }
+    .cta-actions { display: flex; gap: 14px; justify-content: center; position: relative; z-index: 1; }
+    .cta-note { font-size: 12px; color: var(--dim); margin-top: 16px; position: relative; z-index: 1; }
+
+    /* ---- FOOTER ---- */
+    .footer {
+      border-top: 1px solid var(--border);
+      padding: 48px;
+      position: relative; z-index: 1;
+    }
+    .footer-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1.5fr 1fr 1fr 1fr;
+      gap: 48px;
+    }
+    .footer-brand { display: flex; align-items: center; gap: 10px; font-family: var(--font-head); font-size: 17px; font-weight: 800; margin-bottom: 12px; }
+    .footer-brand-icon { width: 30px; height: 30px; background: linear-gradient(135deg, var(--blue), var(--violet)); border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+    .footer-about { font-size: 13px; color: var(--muted); line-height: 1.7; margin-bottom: 20px; }
+    .footer-stack { display: flex; flex-wrap: wrap; gap: 6px; }
+    .stack-chip { font-size: 10px; padding: 3px 8px; border-radius: 4px; background: var(--surface2); border: 1px solid var(--border2); color: var(--dim); }
+    .footer-col-title { font-family: var(--font-head); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--dim); margin-bottom: 16px; }
+    .footer-links { display: flex; flex-direction: column; gap: 10px; }
+    .footer-links a { font-size: 13px; color: var(--muted); transition: color var(--t-fast); }
+    .footer-links a:hover { color: var(--text); }
+    .footer-bottom {
+      max-width: 1100px;
+      margin: 40px auto 0;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: var(--dim);
+    }
+
+    /* ---- ANIMATIONS ---- */
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ---- RESPONSIVE ---- */
+    @media (max-width: 900px) {
+      .hero { padding: 90px 24px 60px; }
+      .hero-cta { flex-direction: column; }
+      .hero-proof { flex-wrap: wrap; }
+      .hero-dashboard-wrap { padding: 0 24px 60px; }
+      .section-wrap { padding: 0 24px; }
+      .features-grid { grid-template-columns: 1fr 1fr; }
+      .steps-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+      .steps-grid::before { display: none; }
+      .metrics-strip { grid-template-columns: 1fr 1fr; }
+      .metric-item:nth-child(2) { border-right: none; }
+      .testimonials-grid { grid-template-columns: 1fr; }
+      .footer-inner { grid-template-columns: 1fr 1fr; }
+      .footer { padding: 48px 24px; }
+    }
+    @media (max-width: 600px) {
+      .features-grid { grid-template-columns: 1fr; }
+      .metrics-strip { grid-template-columns: 1fr; }
+      .metric-item { border-right: none; border-bottom: 1px solid var(--border); }
+      .mock-body { grid-template-columns: 1fr; }
+      .mock-sidebar { display: none; }
+      .mock-stats { grid-template-columns: 1fr 1fr; }
+      .mock-charts { grid-template-columns: 1fr; }
+      .footer-inner { grid-template-columns: 1fr; }
+    }
+  </style>
 </head>
 <body>
 
-  <!-- NAVBAR -->
-  <nav class="navbar">
-    <div class="nav-brand">
-      <span class="brand-icon">◈</span>
-      <span class="brand-name">AURORA</span>
-    </div>
-    <ul class="nav-links">
-      <li><a href="#features">Features</a></li>
-      <li><a href="#modules">Modules</a></li>
-      <li><a href="#about">About</a></li>
-    </ul>
-    <div class="nav-actions">
-      <a href="login.html" class="btn btn-outline">Login</a>
-      <a href="register.html" class="btn btn-primary">Get Started</a>
-    </div>
-  </nav>
+<!-- Cursor -->
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
 
-  <!-- HERO -->
-  <section class="hero">
-    <div class="hero-content">
-      <div class="hero-badge">AI-Powered Business Intelligence</div>
-      <h1 class="hero-title">
-        Turn Your Business Data<br/>Into <span class="highlight">Smart Strategy</span>
-      </h1>
-      <p class="hero-subtitle">
-        AURORA monitors your sales, inventory, and customer reviews in real-time —
-        then tells you exactly what to do next.
-      </p>
-      <div class="hero-actions">
-        <a href="register.html" class="btn btn-primary btn-lg">Start Free →</a>
-        <a href="login.html" class="btn btn-ghost btn-lg">Sign In</a>
-      </div>
-      <div class="hero-stats">
-        <div class="stat"><span class="stat-num">6</span><span class="stat-label">AI Modules</span></div>
-        <div class="stat-divider"></div>
-        <div class="stat"><span class="stat-num">Real-Time</span><span class="stat-label">Insights</span></div>
-        <div class="stat-divider"></div>
-        <div class="stat"><span class="stat-num">Auto</span><span class="stat-label">Strategies</span></div>
-      </div>
-    </div>
-    <div class="hero-visual">
-      <div class="dashboard-preview">
-        <div class="preview-bar">
-          <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
-          <span class="preview-title">AURORA Dashboard</span>
-        </div>
-        <div class="preview-body">
-          <div class="preview-cards">
-            <div class="preview-card blue"><div class="pc-label">Total Sales</div><div class="pc-val">₹2,40,500</div><div class="pc-trend up">↑ 12%</div></div>
-            <div class="preview-card green"><div class="pc-label">In Stock</div><div class="pc-val">1,284</div><div class="pc-trend up">↑ 3%</div></div>
-            <div class="preview-card orange"><div class="pc-label">Alerts</div><div class="pc-val">4</div><div class="pc-trend down">↓ Fix Now</div></div>
-          </div>
-          <div class="preview-chart">
-            <div class="chart-bar" style="height:60%"></div>
-            <div class="chart-bar" style="height:80%"></div>
-            <div class="chart-bar" style="height:45%"></div>
-            <div class="chart-bar" style="height:90%"></div>
-            <div class="chart-bar" style="height:70%"></div>
-            <div class="chart-bar" style="height:55%"></div>
-            <div class="chart-bar active" style="height:95%"></div>
-          </div>
-          <div class="preview-strategy">
-            <div class="ps-icon">🧠</div>
-            <div class="ps-text"><strong>Strategy Alert:</strong> Product "Rice Bag 5kg" is 34% below target. Suggest: Run 10% discount campaign.</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
+<!-- Noise + BG -->
+<div class="noise"></div>
+<div class="grid-bg"></div>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
 
-  <!-- FEATURES -->
-  <section class="features" id="features">
-    <div class="section-header">
-      <div class="section-badge">What AURORA Does</div>
-      <h2>Everything Your Business Needs</h2>
-      <p>From tracking sales to generating strategies — all in one platform.</p>
+<!-- ==================== NAVBAR ==================== -->
+<nav class="navbar" id="navbar">
+  <a href="index.html" class="nav-brand">
+    <div class="nav-brand-icon">◈</div>
+    AURORA
+  </a>
+  <ul class="nav-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#how">How it Works</a></li>
+    <li><a href="#metrics">Results</a></li>
+  </ul>
+  <div class="nav-actions">
+    <a href="login.html" class="btn btn-ghost btn-sm">Sign In</a>
+    <a href="register.html" class="btn btn-primary btn-sm">Get Started →</a>
+  </div>
+</nav>
+
+<!-- ==================== HERO ==================== -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-eyebrow">
+      <div class="eyebrow-dot"></div>
+      AI-Powered Business Intelligence — Now Live
+    </div>
+
+    <h1 class="hero-title">
+      Your Business,<br/>
+      <span class="line-2">Intelligently Optimized</span>
+    </h1>
+
+    <p class="hero-sub">
+      AURORA monitors your sales, reviews, and inventory in real-time —
+      then generates precise strategies to grow revenue automatically.
+    </p>
+
+    <div class="hero-cta">
+      <a href="register.html" class="btn btn-hero btn-hero-primary">
+        Start for Free
+        <span class="btn-arrow">→</span>
+      </a>
+      <a href="login.html" class="btn btn-hero btn-hero-secondary">
+        Sign In to Dashboard
+      </a>
+    </div>
+
+    <div class="hero-proof">
+      <div class="proof-stat">
+        <span class="proof-num">6</span>
+        <span class="proof-label">AI Modules</span>
+      </div>
+      <div class="proof-div"></div>
+      <div class="proof-stat">
+        <span class="proof-num">Real-Time</span>
+        <span class="proof-label">Insights</span>
+      </div>
+      <div class="proof-div"></div>
+      <div class="proof-stat">
+        <span class="proof-num">Auto</span>
+        <span class="proof-label">Strategies</span>
+      </div>
+      <div class="proof-div"></div>
+      <div class="proof-stat">
+        <span class="proof-num">Owner</span>
+        <span class="proof-label">Exclusive Portal</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DASHBOARD PREVIEW -->
+<div class="hero-dashboard-wrap">
+  <div class="dashboard-mock">
+    <div class="mock-topbar">
+      <div class="mock-dot r"></div>
+      <div class="mock-dot y"></div>
+      <div class="mock-dot g"></div>
+      <div class="mock-url">aurora-platform.com/dashboard</div>
+    </div>
+    <div class="mock-body">
+      <div class="mock-sidebar">
+        <div class="mock-nav-item a"><div class="mock-nav-dot"></div> Dashboard</div>
+        <div class="mock-nav-item"><div class="mock-nav-dot"></div> Sales</div>
+        <div class="mock-nav-item"><div class="mock-nav-dot"></div> Inventory</div>
+        <div class="mock-nav-item"><div class="mock-nav-dot"></div> Reviews</div>
+        <div class="mock-nav-item"><div class="mock-nav-dot"></div> Strategies</div>
+        <div class="mock-nav-item"><div class="mock-nav-dot"></div> Forecast</div>
+      </div>
+      <div class="mock-main">
+        <div class="mock-stats">
+          <div class="mock-stat">
+            <div class="mock-stat-val" style="color:var(--blue)">₹2.4L</div>
+            <div class="mock-stat-lbl">Revenue</div>
+          </div>
+          <div class="mock-stat">
+            <div class="mock-stat-val" style="color:var(--green)">1,284</div>
+            <div class="mock-stat-lbl">In Stock</div>
+          </div>
+          <div class="mock-stat">
+            <div class="mock-stat-val" style="color:var(--amber)">87%</div>
+            <div class="mock-stat-lbl">Sentiment</div>
+          </div>
+          <div class="mock-stat">
+            <div class="mock-stat-val" style="color:var(--red)">4</div>
+            <div class="mock-stat-lbl">Alerts</div>
+          </div>
+        </div>
+        <div class="mock-charts">
+          <div class="mock-chart-box">
+            <div class="mock-chart-title">Sales This Week</div>
+            <div class="mock-bars">
+              <div class="mock-bar" style="height:50%"></div>
+              <div class="mock-bar" style="height:70%"></div>
+              <div class="mock-bar" style="height:40%"></div>
+              <div class="mock-bar" style="height:85%"></div>
+              <div class="mock-bar" style="height:60%"></div>
+              <div class="mock-bar" style="height:75%"></div>
+              <div class="mock-bar hi" style="height:95%"></div>
+            </div>
+          </div>
+          <div class="mock-chart-box">
+            <div class="mock-chart-title">Top Product</div>
+            <div style="font-family:var(--font-head);font-size:13px;color:var(--text);margin-top:8px">Rice Bag 5kg</div>
+            <div style="font-size:10px;color:var(--dim);margin-top:4px">342 units sold</div>
+            <div style="margin-top:8px;height:4px;background:var(--surface3);border-radius:4px;overflow:hidden"><div style="width:82%;height:100%;background:var(--blue);border-radius:4px"></div></div>
+            <div style="font-size:10px;color:var(--green);margin-top:4px">↑ 18% vs last week</div>
+          </div>
+        </div>
+        <div class="mock-strategy-box">
+          <div class="mock-strategy-title">🧠 Strategy Suggestions</div>
+          <div class="mock-strategy-item"><div class="mock-strategy-dot" style="background:var(--red)"></div>Rice Oil 1L is 34% below target — Run discount campaign</div>
+          <div class="mock-strategy-item"><div class="mock-strategy-dot" style="background:var(--amber)"></div>Wheat Flour 2kg has dead stock — Bundle with Rice Bag</div>
+          <div class="mock-strategy-item"><div class="mock-strategy-dot" style="background:var(--green)"></div>Dairy products sentiment declining — Quality review needed</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== FEATURES ==================== -->
+<section class="features-section" id="features">
+  <div class="section-wrap">
+    <div class="section-header reveal">
+      <div class="section-badge">🧩 Platform Modules</div>
+      <h2 class="section-title">Everything in One Platform</h2>
+      <p class="section-sub">Six intelligent modules that work together to give you complete business visibility.</p>
     </div>
     <div class="features-grid">
-      <div class="feature-card">
-        <div class="feature-icon">📈</div>
-        <h3>Sales Intelligence</h3>
-        <p>Identify best-sellers and underperformers. Compare target vs actual sales with visual charts.</p>
+      <div class="feature-item reveal reveal-delay-1">
+        <div class="feature-num">01</div>
+        <div class="feature-icon-wrap">📈</div>
+        <div class="feature-name">Sales Intelligence</div>
+        <p class="feature-desc">Identify best-sellers and underperformers instantly. Compare target vs actual with dynamic charts.</p>
       </div>
-      <div class="feature-card">
-        <div class="feature-icon">💬</div>
-        <h3>Review Sentiment</h3>
-        <p>Analyze customer reviews automatically. Detect recurring complaints and satisfaction trends.</p>
+      <div class="feature-item reveal reveal-delay-2">
+        <div class="feature-num">02</div>
+        <div class="feature-icon-wrap">💬</div>
+        <div class="feature-name">Review Sentiment</div>
+        <p class="feature-desc">Auto-analyze customer reviews. Detect patterns, complaints, and satisfaction scores per product.</p>
       </div>
-      <div class="feature-card">
-        <div class="feature-icon">📦</div>
-        <h3>Inventory Optimization</h3>
-        <p>Track stock levels in real-time. Get alerts for dead stock, overstocking, and fast-moving items.</p>
+      <div class="feature-item reveal reveal-delay-3">
+        <div class="feature-num">03</div>
+        <div class="feature-icon-wrap">📦</div>
+        <div class="feature-name">Inventory Optimization</div>
+        <p class="feature-desc">Real-time stock tracking with alerts for dead stock, overstocking, and fast-moving items.</p>
       </div>
-      <div class="feature-card">
-        <div class="feature-icon">🧠</div>
-        <h3>Strategy Engine</h3>
-        <p>AI-generated strategy suggestions for every underperforming product — discount, bundle, reposition.</p>
+      <div class="feature-item reveal reveal-delay-1">
+        <div class="feature-num">04</div>
+        <div class="feature-icon-wrap">🧠</div>
+        <div class="feature-name">Strategy Engine</div>
+        <p class="feature-desc">AI-generated action plans for every underperforming product. Discount, bundle, reposition, or promote.</p>
       </div>
-      <div class="feature-card">
-        <div class="feature-icon">🔮</div>
-        <h3>Sales Forecasting</h3>
-        <p>Predict future demand using historical data. Plan inventory and campaigns ahead of time.</p>
+      <div class="feature-item reveal reveal-delay-2">
+        <div class="feature-num">05</div>
+        <div class="feature-icon-wrap">🔮</div>
+        <div class="feature-name">Sales Forecasting</div>
+        <p class="feature-desc">Predict demand for the next 4 weeks. Plan stock and campaigns before revenue drops.</p>
       </div>
-      <div class="feature-card">
-        <div class="feature-icon">👑</div>
-        <h3>Owner Portal</h3>
-        <p>Exclusive executive dashboard for business owners. Multi-branch comparison and risk overview.</p>
+      <div class="feature-item reveal reveal-delay-3">
+        <div class="feature-num">06</div>
+        <div class="feature-icon-wrap">👑</div>
+        <div class="feature-name">Owner Portal</div>
+        <p class="feature-desc">Exclusive executive dashboard. Multi-branch comparison, risk overview, and automated reports.</p>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- FOOTER -->
-  <footer class="footer">
-    <div class="footer-brand">
-      <span class="brand-icon">◈</span>
-      <span class="brand-name">AURORA</span>
+<!-- ==================== HOW IT WORKS ==================== -->
+<section class="how-section" id="how">
+  <div class="section-wrap">
+    <div class="section-header text-center reveal">
+      <div class="section-badge">⚡ Simple Process</div>
+      <h2 class="section-title">Up and Running in Minutes</h2>
+      <p class="section-sub" style="margin:0 auto">Four steps from signup to full business intelligence.</p>
     </div>
-    <p class="footer-sub">Autonomous Unified Retail Operations & Revenue Analytics</p>
-    <p class="footer-copy">© 2025 AURORA Platform. Built with PHP · MySQL · AJAX · jQuery</p>
-  </footer>
+    <div class="steps-grid">
+      <div class="step-item reveal reveal-delay-1">
+        <div class="step-num">1</div>
+        <div class="step-name">Create Account</div>
+        <p class="step-desc">Register as a Vendor or Business Owner. Set up your business profile in 2 minutes.</p>
+      </div>
+      <div class="step-item reveal reveal-delay-2">
+        <div class="step-num">2</div>
+        <div class="step-name">Add Your Data</div>
+        <p class="step-desc">Import your products, sales records, and inventory. Connect your store data easily.</p>
+      </div>
+      <div class="step-item reveal reveal-delay-3">
+        <div class="step-num">3</div>
+        <div class="step-name">Get Insights</div>
+        <p class="step-desc">AURORA analyzes everything in real-time — sales, reviews, stock, forecasts, all in one view.</p>
+      </div>
+      <div class="step-item reveal reveal-delay-4">
+        <div class="step-num">4</div>
+        <div class="step-name">Take Action</div>
+        <p class="step-desc">Receive precise strategy recommendations and act on them with one click. Watch revenue grow.</p>
+      </div>
+    </div>
+  </div>
+</section>
 
+<!-- ==================== METRICS ==================== -->
+<section class="metrics-section" id="metrics">
+  <div class="section-wrap">
+    <div class="metrics-strip reveal">
+      <div class="metric-item">
+        <div class="metric-val">6<span>+</span></div>
+        <div class="metric-label">Intelligent Modules</div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-val">Real<span>-Time</span></div>
+        <div class="metric-label">Data Processing</div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-val">100<span>%</span></div>
+        <div class="metric-label">Web Technology Stack</div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-val">2<span> Roles</span></div>
+        <div class="metric-label">Vendor & Owner Portals</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== TESTIMONIALS ==================== -->
+<section class="testimonials-section">
+  <div class="section-wrap">
+    <div class="section-header reveal">
+      <div class="section-badge">💬 Early Feedback</div>
+      <h2 class="section-title">What Business Owners Say</h2>
+    </div>
+    <div class="testimonials-grid">
+      <div class="testimonial-card reveal reveal-delay-1">
+        <div class="testimonial-stars">★★★★★</div>
+        <p class="testimonial-text">"The strategy engine is incredible. It detected that two of our products were underperforming and suggested a bundle deal — sales jumped 40% in one week."</p>
+        <div class="testimonial-author">
+          <div class="author-avatar" style="background:linear-gradient(135deg,#4f8bff,#7c3aed)">R</div>
+          <div>
+            <div class="author-name">Ramesh K.</div>
+            <div class="author-role">Supermart Owner, Hyderabad</div>
+          </div>
+        </div>
+      </div>
+      <div class="testimonial-card reveal reveal-delay-2">
+        <div class="testimonial-stars">★★★★★</div>
+        <p class="testimonial-text">"Finally a platform that tells me WHAT to do, not just shows me charts. The inventory alerts alone saved us from overstocking ₹80,000 worth of goods."</p>
+        <div class="testimonial-author">
+          <div class="author-avatar" style="background:linear-gradient(135deg,#10b981,#059669)">P</div>
+          <div>
+            <div class="author-name">Priya S.</div>
+            <div class="author-role">Multi-Vendor Platform Manager</div>
+          </div>
+        </div>
+      </div>
+      <div class="testimonial-card reveal reveal-delay-3">
+        <div class="testimonial-stars">★★★★★</div>
+        <p class="testimonial-text">"The owner portal gives me a bird's-eye view across all my branches. I can see which store is struggling and why — from one screen, on any device."</p>
+        <div class="testimonial-author">
+          <div class="author-avatar" style="background:linear-gradient(135deg,#f59e0b,#d97706)">A</div>
+          <div>
+            <div class="author-name">Arjun M.</div>
+            <div class="author-role">Retail Chain Director</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== CTA ==================== -->
+<section class="cta-section">
+  <div class="section-wrap">
+    <div class="cta-box reveal">
+      <h2>Ready to Transform Your Business?</h2>
+      <p>Join AURORA and start making data-driven decisions from day one.</p>
+      <div class="cta-actions">
+        <a href="register.html" class="btn btn-primary btn-xl">Create Free Account →</a>
+        <a href="login.html" class="btn btn-outline btn-xl">Sign In</a>
+      </div>
+      <p class="cta-note">No credit card required · Built with PHP + MySQL + AJAX</p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== FOOTER ==================== -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div>
+      <div class="footer-brand">
+        <div class="footer-brand-icon">◈</div>
+        AURORA
+      </div>
+      <p class="footer-about">Autonomous Unified Retail Operations & Revenue Analytics. An AI-powered business intelligence platform for modern retail.</p>
+      <div class="footer-stack">
+        <span class="stack-chip">HTML5</span>
+        <span class="stack-chip">CSS3</span>
+        <span class="stack-chip">JavaScript</span>
+        <span class="stack-chip">PHP</span>
+        <span class="stack-chip">MySQL</span>
+        <span class="stack-chip">AJAX</span>
+        <span class="stack-chip">jQuery</span>
+      </div>
+    </div>
+    <div>
+      <div class="footer-col-title">Platform</div>
+      <div class="footer-links">
+        <a href="dashboard.html">Dashboard</a>
+        <a href="#">Sales Intelligence</a>
+        <a href="#">Inventory</a>
+        <a href="#">Strategy Engine</a>
+        <a href="#">Forecasting</a>
+        <a href="owner-portal.html">Owner Portal</a>
+      </div>
+    </div>
+    <div>
+      <div class="footer-col-title">Account</div>
+      <div class="footer-links">
+        <a href="register.html">Register</a>
+        <a href="login.html">Login</a>
+        <a href="#">Vendor Portal</a>
+        <a href="owner-portal.html">Owner Portal</a>
+      </div>
+    </div>
+    <div>
+      <div class="footer-col-title">About</div>
+      <div class="footer-links">
+        <a href="#">Project Info</a>
+        <a href="#">Tech Stack</a>
+        <a href="#">Documentation</a>
+        <a href="#">Contact</a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div>© 2025 AURORA Platform. PBL4 — Web Technologies Project.</div>
+    <div>Built by SREEHARSHITHREDDY</div>
+  </div>
+</footer>
+
+<script>
+  // Custom Cursor
+  const cursor = document.getElementById('cursor');
+  const ring = document.getElementById('cursor-ring');
+  let rx = 0, ry = 0;
+  document.addEventListener('mousemove', e => {
+    cursor.style.left = e.clientX + 'px';
+    cursor.style.top  = e.clientY + 'px';
+    rx += (e.clientX - rx) * 0.12;
+    ry += (e.clientY - ry) * 0.12;
+    ring.style.left = rx + 'px';
+    ring.style.top  = ry + 'px';
+  });
+  // Smooth ring lag
+  function animateRing() {
+    ring.style.left = rx + 'px';
+    ring.style.top  = ry + 'px';
+    requestAnimationFrame(animateRing);
+  }
+  animateRing();
+  document.querySelectorAll('a, button').forEach(el => {
+    el.addEventListener('mouseenter', () => { cursor.classList.add('hover'); ring.classList.add('hover'); });
+    el.addEventListener('mouseleave', () => { cursor.classList.remove('hover'); ring.classList.remove('hover'); });
+  });
+
+  // Navbar scroll
+  const navbar = document.getElementById('navbar');
+  window.addEventListener('scroll', () => {
+    navbar.classList.toggle('scrolled', window.scrollY > 40);
+  });
+
+  // Scroll reveal
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add('visible'); }
+    });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  // Animate mock bars on scroll
+  const barsObserver = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.querySelectorAll('.mock-bar').forEach((bar, i) => {
+          const h = bar.style.height;
+          bar.style.height = '0%';
+          setTimeout(() => { bar.style.transition = 'height 0.6s ease'; bar.style.height = h; }, i * 60);
+        });
+      }
+    });
+  }, { threshold: 0.3 });
+  document.querySelectorAll('.mock-charts').forEach(el => barsObserver.observe(el));
+</script>
 </body>
 </html>
