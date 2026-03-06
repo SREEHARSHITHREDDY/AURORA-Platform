@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Create Account — AURORA</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <style>
+    .grid-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; background-image: linear-gradient(rgba(79,139,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(79,139,255,0.03) 1px, transparent 1px); background-size: 60px 60px; mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%); }
+    .auth-bg { min-height: 100vh; width: 100%; display: flex; align-items: center; justify-content: center; padding: 24px; position: relative; overflow: hidden; }
+    .auth-bg::before { content: ''; position: absolute; top: -20%; left: 50%; transform: translateX(-50%); width: 700px; height: 700px; background: radial-gradient(circle, rgba(139,92,246,0.06) 0%, transparent 70%); pointer-events: none; }
+    .auth-container { display: grid; grid-template-columns: 1fr 1.2fr; max-width: 960px; width: 100%; background: var(--surface); border: 1px solid var(--border2); border-radius: 28px; overflow: hidden; box-shadow: 0 40px 80px rgba(0,0,0,0.5); position: relative; z-index: 1; animation: authIn 0.5s ease both; }
+    @keyframes authIn { from { opacity: 0; transform: scale(0.97) translateY(12px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+    .auth-left { background: linear-gradient(160deg, #0b0e1a 0%, #120a28 100%); padding: 52px 40px; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; }
+    .auth-left::before { content: ''; position: absolute; top: -60px; right: -60px; width: 240px; height: 240px; background: radial-gradient(circle, rgba(139,92,246,0.12) 0%, transparent 70%); }
+    .auth-left::after  { content: ''; position: absolute; bottom: -80px; left: -40px; width: 260px; height: 260px; background: radial-gradient(circle, rgba(79,139,255,0.08) 0%, transparent 70%); }
+    .auth-brand { display: flex; align-items: center; gap: 12px; font-family: var(--font-head); font-size: 20px; font-weight: 800; position: relative; z-index: 1; }
+    .auth-brand-icon { width: 40px; height: 40px; background: linear-gradient(135deg, var(--violet), var(--blue)); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+    .auth-hero { position: relative; z-index: 1; }
+    .auth-hero h2 { font-family: var(--font-head); font-size: 24px; font-weight: 700; line-height: 1.3; color: var(--text); margin-bottom: 12px; }
+    .auth-hero p { font-size: 13px; color: var(--muted); line-height: 1.7; }
+    .role-preview { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 12px; }
+    .role-card { background: rgba(255,255,255,0.04); border: 1px solid var(--border2); border-radius: var(--r-lg); padding: 16px; }
+    .role-card-title { font-family: var(--font-head); font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 5px; display: flex; align-items: center; gap: 8px; }
+    .role-card-desc { font-size: 12px; color: var(--muted); line-height: 1.6; }
+    .auth-right { padding: 48px 44px; display: flex; flex-direction: column; justify-content: center; overflow-y: auto; }
+    .auth-form-title { font-family: var(--font-head); font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+    .auth-form-sub { font-size: 13px; color: var(--muted); margin-bottom: 28px; }
+    .role-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 22px; }
+    .role-tab { padding: 10px; border-radius: var(--r); border: 1px solid var(--border2); background: var(--surface2); text-align: center; cursor: pointer; transition: all var(--t-fast); font-size: 13px; color: var(--muted); }
+    .role-tab.active { border-color: var(--violet); background: var(--violet-dim); color: var(--violet); font-weight: 500; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .form-btn { width: 100%; padding: 13px; background: var(--blue); color: #fff; border: none; border-radius: var(--r); font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.25s; font-family: var(--font-body); display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .form-btn:hover { background: var(--blue-dark); transform: translateY(-1px); box-shadow: 0 6px 20px var(--blue-glow); }
+    .terms-note { font-size: 11px; color: var(--dim); text-align: center; margin-top: 12px; line-height: 1.5; }
+    .terms-note a { color: var(--muted); }
+    .footer-link { text-align: center; margin-top: 18px; font-size: 13px; color: var(--muted); }
+    .footer-link a { color: var(--blue); transition: color var(--t-fast); }
+    .footer-link a:hover { color: var(--text); }
+    @media (max-width: 720px) { .auth-container { grid-template-columns: 1fr; } .auth-left { display: none; } .auth-right { padding: 36px 28px; } .form-row { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="grid-bg"></div>
+  <div class="auth-bg">
+    <div class="auth-container">
+
+      <!-- LEFT PANEL -->
+      <div class="auth-left">
+        <div class="auth-brand">
+          <div class="auth-brand-icon">◈</div>
+          AURORA
+        </div>
+        <div class="auth-hero">
+          <h2>Start Growing Your Business Today</h2>
+          <p>Join AURORA and get access to powerful AI-driven insights that help you make smarter decisions every day.</p>
+        </div>
+        <div class="role-preview">
+          <div class="role-card">
+            <div class="role-card-title">🏪 Vendor Account</div>
+            <div class="role-card-desc">Manage your products, track sales, monitor inventory, and get strategy recommendations for your store.</div>
+          </div>
+          <div class="role-card" style="border-color:rgba(245,158,11,0.2);background:rgba(245,158,11,0.04)">
+            <div class="role-card-title">👑 Owner Account</div>
+            <div class="role-card-desc">Full executive access. Multi-branch comparison, risk overview, automated reports, and all vendor data.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT PANEL -->
+      <div class="auth-right">
+        <div class="auth-form-title">Create your account</div>
+        <div class="auth-form-sub">Free forever · No credit card needed</div>
+
+        <div class="role-tabs">
+          <div class="role-tab active" onclick="setRole(this, 'vendor')">🏪 Vendor</div>
+          <div class="role-tab" onclick="setRole(this, 'owner')">👑 Business Owner</div>
+        </div>
+
+        <div class="alert alert-error" id="errorMsg">
+          <span class="alert-icon">⚠️</span>
+          <span id="errorText">Please check your details and try again.</span>
+        </div>
+
+        <form action="php/register.php" method="POST" id="registerForm">
+          <input type="hidden" name="role" id="roleInput" value="vendor"/>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="name">Full Name</label>
+              <input type="text" id="name" name="name" class="form-control" placeholder="Your full name" required/>
+            </div>
+            <div class="form-group">
+              <label for="email">Email Address</label>
+              <input type="email" id="email" name="email" class="form-control" placeholder="you@example.com" required/>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="password">Password</label>
+              <input type="password" id="password" name="password" class="form-control" placeholder="Min. 6 characters" required/>
+            </div>
+            <div class="form-group">
+              <label for="confirm_password">Confirm Password</label>
+              <input type="password" id="confirm_password" name="confirm_password" class="form-control" placeholder="Repeat password" required/>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="business_name">Business / Store Name</label>
+            <input type="text" id="business_name" name="business_name" class="form-control" placeholder="Your business or store name" required/>
+          </div>
+          <div class="form-group">
+            <label for="phone">Phone Number <span style="color:var(--dim);font-weight:400">(optional)</span></label>
+            <input type="tel" id="phone" name="phone" class="form-control" placeholder="+91 9999999999"/>
+          </div>
+          <button type="submit" class="form-btn">
+            Create Account →
+          </button>
+          <p class="terms-note">By creating an account, you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.</p>
+        </form>
+
+        <div class="footer-link">
+          Already have an account? <a href="login.html">Sign in →</a>
+        </div>
+        <div class="footer-link" style="margin-top:8px">
+          <a href="index.html" style="color:var(--dim)">← Back to homepage</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    function setRole(el, role) {
+      document.querySelectorAll('.role-tab').forEach(t => t.classList.remove('active'));
+      el.classList.add('active');
+      document.getElementById('roleInput').value = role;
+    }
+    // Validate passwords match
+    document.getElementById('registerForm').addEventListener('submit', function(e) {
+      const p1 = document.getElementById('password').value;
+      const p2 = document.getElementById('confirm_password').value;
+      if (p1 !== p2) {
+        e.preventDefault();
+        const box = document.getElementById('errorMsg');
+        document.getElementById('errorText').textContent = 'Passwords do not match. Please try again.';
+        box.classList.add('show');
+        document.getElementById('confirm_password').classList.add('error');
+      }
+    });
+    // URL error params
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('error')) {
+      const box = document.getElementById('errorMsg');
+      const txt = document.getElementById('errorText');
+      box.classList.add('show');
+      if (params.get('error') === 'exists') txt.textContent = 'An account with this email already exists.';
+      if (params.get('error') === 'empty')  txt.textContent = 'Please fill in all required fields.';
+    }
+  </script>
+</body>
+</html>
