@@ -1,0 +1,16 @@
+# PHP sensitive files
+config.php
+php/config.php
+
+# Mac system files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# VS Code
+.vscode/
+
+# Logs
+*.log
