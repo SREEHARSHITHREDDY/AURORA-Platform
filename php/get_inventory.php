@@ -26,7 +26,7 @@ $sql = "
     FROM inventory i
     JOIN products p ON i.product_id = p.id
     LEFT JOIN sales s ON s.product_id = p.id
-    WHERE p.vendor_id = $user_id
+    WHERE p.user_id = $user_id
     GROUP BY i.product_id, p.name, p.category, i.stock_qty, i.min_stock
     ORDER BY i.stock_qty ASC
 ";
