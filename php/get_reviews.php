@@ -61,15 +61,15 @@ function analyseSentiment($text, $positive_keywords, $negative_keywords) {
 $sql = "
     SELECT 
         r.id,
-        r.review_text,
-        r.review_date,
-        r.customer_name,
+        r.comment AS review_text,
+        r.created_at AS review_date,
+        r.reviewer AS customer_name,
         p.name AS product_name,
         p.category
     FROM reviews r
     JOIN products p ON r.product_id = p.id
-    WHERE p.vendor_id = $user_id
-    ORDER BY r.review_date DESC
+    WHERE p.user_id = $user_id
+    ORDER BY r.created_at DESC
 ";
 
 $result = mysqli_query($conn, $sql);
