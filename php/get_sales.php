@@ -1,5 +1,10 @@
 <?php
+ini_set('session.cookie_samesite', 'Lax');
 session_start();
+
+header('Content-Type: application/json');
+header('Cache-Control: no-cache, no-store, must-revalidate');
+
 require_once 'db_connect.php';
 
 if (!isset($_SESSION['user_id'])) {
