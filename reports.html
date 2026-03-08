@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Reports — AURORA</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <style>
+    @media print {
+      .navbar,.sidebar,.page-header,.no-print{display:none!important}
+      .layout{display:block!important}
+      .main-content{margin:0!important;padding:16px!important;max-width:100%!important}
+      .card{break-inside:avoid;border:1px solid #ccc!important;background:#fff!important;color:#000!important}
+      body{background:#fff!important;color:#000!important}
+      .stat-card{background:#f5f5f5!important;color:#000!important}
+      .stat-value,.card-title{color:#000!important}
+      .stat-label,.card-subtitle,.text-muted{color:#555!important}
+      .badge{border:1px solid #ccc!important;background:#eee!important;color:#333!important}
+      td,th{color:#000!important;border-color:#ddd!important}
+      .print-header{display:block!important}
+    }
+    .print-header{display:none;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #000}
+    .print-title{font-size:22px;font-weight:800;margin-bottom:4px}
+    .print-sub{font-size:13px;color:#555}
+    .report-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px}
+    .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+    .kpi-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:16px;text-align:center}
+    .kpi-val{font-family:var(--font-head);font-size:20px;font-weight:800;color:var(--text);margin-bottom:4px}
+    .kpi-label{font-size:11px;color:var(--muted)}
+    .cat-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)}
+    .cat-row:last-child{border-bottom:none}
+    @media(max-width:900px){.report-grid{grid-template-columns:1fr}.kpi-row{grid-template-columns:1fr 1fr}}
+  </style>
+</head>
+<body>
+<nav class="navbar scrolled no-print">
+  <a href="index.html" class="nav-brand"><div class="nav-brand-icon">◈</div>AURORA</a>
+  <div class="nav-actions"><a href="php/logout.php" class="btn btn-ghost btn-sm">Sign Out</a></div>
+</nav>
+<div class="layout">
+  <aside class="sidebar no-print">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Main</div>
+      <a href="dashboard.html" class="sidebar-item"><span class="sidebar-icon">⊞</span> Dashboard</a>
+      <a href="sales.html" class="sidebar-item"><span class="sidebar-icon">📈</span> Sales</a>
+      <a href="inventory.html" class="sidebar-item"><span class="sidebar-icon">📦</span> Inventory</a>
+      <a href="reviews.html" class="sidebar-item"><span class="sidebar-icon">💬</span> Reviews</a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Intelligence</div>
+      <a href="strategies.html" class="sidebar-item"><span class="sidebar-icon">🧠</span> Strategies</a>
+      <a href="forecast.html" class="sidebar-item"><span class="sidebar-icon">🔮</span> Forecast</a>
+      <a href="reports.html" class="sidebar-item active"><span class="sidebar-icon">📄</span> Reports</a>
+    </div>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="user-avatar">S</div>
+        <div class="user-info">
+          <div class="user-name" id="sidebarName">Vendor</div>
+          <div class="user-role">Vendor</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main-content" id="reportContent">
+    <!-- PRINT HEADER (visible only when printing) -->
+    <div class="print-header">
+      <div class="print-title">AURORA Business Report</div>
+      <div class="print-sub" id="printMeta">—</div>
+    </div>
+
+    <div class="page-header no-print">
+      <div>
+        <div class="page-title">📄 Monthly Business Report</div>
+        <div class="page-subtitle">Full summary of your business performance — printable</div>
+      </div>
+      <button class="btn btn-primary" onclick="window.print()">🖨️ Print Report</button>
+    </div>
+
+    <!-- LOADING STATE -->
+    <div id="loadingState" style="text-align:center;padding:48px">
+      <div class="spinner" style="margin:0 auto 12px;width:36px;height:36px"></div>
+      <div class="text-muted">Generating your report...</div>
+    </div>
+
+    <!-- REPORT BODY (hidden until data loads) -->
+    <div id="reportBody" style="display:none">
+
+      <!-- KPI ROW -->
+      <div class="kpi-row">
+        <div class="kpi-box"><div class="kpi-val" id="rRevenue">—</div><div class="kpi-label">Total Revenue</div></div>
+        <div class="kpi-box"><div class="kpi-val" id="rUnits">—</div><div class="kpi-label">Units Sold</div></div>
+        <div class="kpi-box"><div class="kpi-val" id="rSentiment">—</div><div class="kpi-label">Avg Sentiment</div></div>
+        <div class="kpi-box"><div class="kpi-val" id="rStock">—</div><div class="kpi-label">Total Stock</div></div>
+      </div>
+
+      <!-- PERFORMANCE SUMMARY -->
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-header">
+          <div class="card-title">Performance Summary</div>
+          <div class="card-subtitle" id="reportMonth">—</div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:16px" id="perfSummary"></div>
+      </div>
+
+      <!-- TOP PRODUCTS + CATEGORIES -->
+      <div class="report-grid">
+        <div class="card">
+          <div class="card-header"><div class="card-title">Top 10 Products by Revenue</div></div>
+          <div class="table-wrap" style="margin-top:12px">
+            <table class="data-table">
+              <thead><tr><th>#</th><th>Product</th><th>Revenue</th><th>Units</th><th>Achievement</th></tr></thead>
+              <tbody id="topProductsBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Revenue by Category</div></div>
+          <div id="categoryBreakdown" style="margin-top:12px"></div>
+
+          <div class="card-header" style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+            <div class="card-title">Inventory Health</div>
+          </div>
+          <div id="inventorySummary" style="margin-top:12px"></div>
+
+          <div class="card-header" style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+            <div class="card-title">Review Sentiment</div>
+          </div>
+          <div id="sentimentSummary" style="margin-top:12px"></div>
+        </div>
+      </div>
+
+      <!-- MONTHLY HISTORY -->
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-header"><div class="card-title">Monthly Revenue History</div><div class="card-subtitle">Last 6 months</div></div>
+        <div class="table-wrap" style="margin-top:12px">
+          <table class="data-table">
+            <thead><tr><th>Month</th><th>Revenue</th><th>Units Sold</th><th>vs Previous</th></tr></thead>
+            <tbody id="monthlyBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- FOOTER -->
+      <div style="text-align:center;padding:24px 0;color:var(--muted);font-size:12px;border-top:1px solid var(--border)">
+        Generated by AURORA Platform · <span id="reportDate">—</span> · Autonomous Unified Retail Operations &amp; Revenue Analytics
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="js/main.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  fetch('php/get_report.php', { credentials:'same-origin' })
+    .then(r => r.json())
+    .then(data => {
+      document.getElementById('loadingState').style.display = 'none';
+      if (data.status !== 'success') {
+        document.getElementById('reportContent').innerHTML += '<div style="text-align:center;padding:32px;color:var(--red)">Failed to generate report. Please log in again.</div>';
+        return;
+      }
+      document.getElementById('reportBody').style.display = 'block';
+      if (data.user_name) document.getElementById('sidebarName').textContent = data.user_name.split(' ')[0];
+
+      // Print meta
+      document.getElementById('printMeta').textContent = data.business_name + ' · ' + data.report_month + ' · Generated: ' + data.report_date;
+      document.getElementById('reportDate').textContent = data.report_date;
+      document.getElementById('reportMonth').textContent = data.report_month;
+
+      // KPIs
+      document.getElementById('rRevenue').textContent   = '₹' + Number(data.revenue).toLocaleString('en-IN');
+      document.getElementById('rUnits').textContent     = Number(data.units_sold).toLocaleString();
+      document.getElementById('rSentiment').textContent = data.sentiment.score + '%';
+      document.getElementById('rStock').textContent     = Number(data.inventory.total_stock).toLocaleString();
+
+      // Performance summary cards
+      const changeColor = data.revenue_change >= 0 ? 'var(--green)' : 'var(--red)';
+      document.getElementById('perfSummary').innerHTML = `
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:16px">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Revenue Growth</div>
+          <div style="font-size:20px;font-weight:800;font-family:var(--font-head);color:${changeColor}">${data.revenue_change >= 0 ? '+' : ''}${data.revenue_change}%</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">vs last month</div>
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:16px">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Total Orders</div>
+          <div style="font-size:20px;font-weight:800;font-family:var(--font-head)">${Number(data.orders).toLocaleString()}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">this month</div>
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:16px">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Avg Order Value</div>
+          <div style="font-size:20px;font-weight:800;font-family:var(--font-head)">₹${data.orders > 0 ? Math.round(data.revenue / data.orders).toLocaleString('en-IN') : 0}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">per transaction</div>
+        </div>`;
+
+      // Top products
+      const totalRev = data.top_products.reduce((s,p) => s + parseFloat(p.revenue), 0);
+      document.getElementById('topProductsBody').innerHTML = data.top_products.map((p, i) => {
+        const pct = p.achievement;
+        const color = pct >= 80 ? 'var(--green)' : pct >= 50 ? 'var(--amber)' : 'var(--red)';
+        return `<tr>
+          <td style="color:var(--muted)">${i+1}</td>
+          <td class="td-main">${p.name}</td>
+          <td>₹${Number(p.revenue).toLocaleString('en-IN')}</td>
+          <td>${Number(p.units_sold).toLocaleString()}</td>
+          <td><span style="color:${color};font-weight:600">${pct}%</span></td>
+        </tr>`;
+      }).join('');
+
+      // Category breakdown
+      document.getElementById('categoryBreakdown').innerHTML = data.categories.map(c => {
+        const share = totalRev > 0 ? Math.round((c.revenue / totalRev) * 100) : 0;
+        return `<div class="cat-row">
+          <span style="font-size:13px;color:var(--text2)">${c.category}</span>
+          <div style="text-align:right">
+            <span style="font-size:13px;font-weight:700;font-family:var(--font-head)">₹${Number(c.revenue).toLocaleString('en-IN')}</span>
+            <span style="font-size:11px;color:var(--muted);margin-left:6px">${share}%</span>
+          </div>
+        </div>`;
+      }).join('');
+
+      // Inventory summary
+      document.getElementById('inventorySummary').innerHTML = `
+        <div class="cat-row"><span style="font-size:13px;color:var(--text2)">Total Stock Units</span><span style="font-size:13px;font-weight:700">${Number(data.inventory.total_stock).toLocaleString()}</span></div>
+        <div class="cat-row"><span style="font-size:13px;color:var(--text2)">Low Stock Products</span><span style="font-size:13px;font-weight:700;color:var(--amber)">${data.inventory.low_stock}</span></div>
+        <div class="cat-row"><span style="font-size:13px;color:var(--text2)">Out of Stock</span><span style="font-size:13px;font-weight:700;color:var(--red)">${data.inventory.out_of_stock}</span></div>`;
+
+      // Sentiment summary
+      document.getElementById('sentimentSummary').innerHTML = `
+        <div class="cat-row"><span style="font-size:13px;color:var(--text2)">Overall Score</span><span style="font-size:13px;font-weight:700;color:${data.sentiment.score>=60?'var(--green)':'var(--red)'}">${data.sentiment.score}%</span></div>
+        <div class="cat-row"><span style="font-size:13px;color:var(--text2)">Positive Reviews</span><span style="font-size:13px;font-weight:700;color:var(--green)">${data.sentiment.positive}</span></div>
+        <div class="cat-row"><span style="font-size:13px;color:var(--text2)">Negative Reviews</span><span style="font-size:13px;font-weight:700;color:var(--red)">${data.sentiment.negative}</span></div>
+        <div class="cat-row"><span style="font-size:13px;color:var(--text2)">Total Reviews</span><span style="font-size:13px;font-weight:700">${data.sentiment.total}</span></div>`;
+
+      // Monthly history
+      document.getElementById('monthlyBody').innerHTML = data.monthly.map((m, i, arr) => {
+        const prev = arr[i-1];
+        const change = prev && prev.revenue > 0
+          ? Math.round(((m.revenue - prev.revenue) / prev.revenue) * 100)
+          : null;
+        const changeStr = change === null ? '—'
+          : `<span style="color:${change>=0?'var(--green)':'var(--red)'}">${change>=0?'+':''}${change}%</span>`;
+        return `<tr>
+          <td class="td-main">${m.label}</td>
+          <td>₹${Number(m.revenue).toLocaleString('en-IN')}</td>
+          <td>${Number(m.units).toLocaleString()}</td>
+          <td>${changeStr}</td>
+        </tr>`;
+      }).join('');
+    });
+});
+</script>
+</body>
+</html>
