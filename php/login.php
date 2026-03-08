@@ -1,5 +1,9 @@
 <?php
+ini_set('session.cookie_samesite', 'Lax');
 session_start();
+
+header('Cache-Control: no-cache, no-store, must-revalidate');
+
 require_once 'db_connect.php';
 
 // Only accept POST
