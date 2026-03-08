@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Inventory — AURORA</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <style>
+    .filter-btn { padding:7px 16px; border-radius:var(--r-sm); border:1px solid var(--border2); background:var(--surface2); color:var(--muted); font-size:12px; cursor:pointer; transition:all var(--t-fast); }
+    .filter-btn:hover { border-color:var(--blue); color:var(--blue); }
+    .filter-btn.active { background:var(--blue-dim); border-color:var(--blue); color:var(--blue); font-weight:500; }
+    .stock-bar-wrap { display:flex; align-items:center; gap:8px; }
+    .stock-bar { height:6px; border-radius:3px; background:var(--border2); flex:1; max-width:80px; overflow:hidden; }
+    .stock-fill { height:100%; border-radius:3px; transition:width 0.5s ease; }
+    tr.row-dead td { opacity:0.7; }
+    tr.row-out td { opacity:0.6; }
+  </style>
+</head>
+<body>
+<nav class="navbar scrolled"><a href="index.html" class="nav-brand"><div class="nav-brand-icon">◈</div>AURORA</a>
+  <div class="nav-actions"><a href="php/logout.php" class="btn btn-ghost btn-sm">Sign Out</a></div>
+</nav>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Main</div>
+      <a href="dashboard.html" class="sidebar-item"><span class="sidebar-icon">⊞</span> Dashboard</a>
+      <a href="sales.html" class="sidebar-item"><span class="sidebar-icon">📈</span> Sales</a>
+      <a href="inventory.html" class="sidebar-item active"><span class="sidebar-icon">📦</span> Inventory</a>
+      <a href="reviews.html" class="sidebar-item"><span class="sidebar-icon">💬</span> Reviews</a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Intelligence</div>
+      <a href="strategies.html" class="sidebar-item"><span class="sidebar-icon">🧠</span> Strategies</a>
+      <a href="forecast.html" class="sidebar-item"><span class="sidebar-icon">🔮</span> Forecast</a>
+      <a href="reports.html" class="sidebar-item"><span class="sidebar-icon">📄</span> Reports</a>
+    </div>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="user-avatar">S</div>
+        <div class="user-info">
+          <div class="user-name" id="sidebarName">Vendor</div>
+          <div class="user-role">Vendor</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+  <main class="main-content">
+    <div class="page-header">
+      <div class="page-title">Inventory Management</div>
+      <div class="page-subtitle">Real-time stock levels, dead stock detection, and low stock alerts</div>
+    </div>
+
+    <!-- STAT CARDS -->
+    <div class="stat-grid">
+      <div class="stat-card blue"><div class="stat-icon">📦</div><div class="stat-value" id="invTotal">—</div><div class="stat-label">Total Stock Units</div><span class="stat-change up">↑ All products</span></div>
+      <div class="stat-card amber"><div class="stat-icon">⚠️</div><div class="stat-value" id="invLow">—</div><div class="stat-label">Low Stock Alerts</div><span class="stat-change down">Need restocking</span></div>
+      <div class="stat-card red"><div class="stat-icon">🚫</div><div class="stat-value" id="invOut">—</div><div class="stat-label">Out of Stock</div><span class="stat-change down">Immediate action</span></div>
+      <div class="stat-card violet"><div class="stat-icon">💤</div><div class="stat-value" id="invDead">—</div><div class="stat-label">Dead Stock (14+ days)</div><span class="stat-change down">No recent sales</span></div>
+    </div>
+
+    <!-- FILTER BAR -->
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap">
+      <span style="font-size:12px;color:var(--muted)">Filter:</span>
+      <button class="filter-btn active" onclick="filterInventory('all',this)">All Items</button>
+      <button class="filter-btn" onclick="filterInventory('low',this)">Low Stock</button>
+      <button class="filter-btn" onclick="filterInventory('out',this)">Out of Stock</button>
+      <button class="filter-btn" onclick="filterInventory('dead',this)">Dead Stock</button>
+      <div style="margin-left:auto"><input type="text" class="form-control" placeholder="🔍 Search products..." oninput="searchInventory(this.value)" style="width:220px;padding:7px 12px;font-size:12px"/></div>
+    </div>
+
+    <!-- INVENTORY TABLE -->
+    <div class="card card-flush">
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Category</th>
+              <th>Stock Qty</th>
+              <th>Min Stock</th>
+              <th>Last Sale</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="inventoryTableBody">
+            <tr><td colspan="6" style="text-align:center;padding:32px">
+              <div class="spinner" style="margin:0 auto 8px"></div>
+              <div class="text-muted text-sm">Loading inventory...</div>
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+<script src="js/main.js"></script>
+<script>
+let allInventory = [];
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadInventory();
+});
+
+function loadInventory() {
+  fetch('php/get_inventory.php', { credentials:'same-origin' })
+    .then(r => r.json()).then(data => {
+      if (data.status !== 'success') {
+        document.getElementById('inventoryTableBody').innerHTML = '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--red)">Failed to load inventory. Please log in again.</td></tr>';
+        return;
+      }
+      if (data.user_name) document.getElementById('sidebarName').textContent = data.user_name.split(' ')[0];
+      // Stats
+      document.getElementById('invTotal').textContent = Number(data.stats.total_stock).toLocaleString();
+      document.getElementById('invLow').textContent   = data.stats.low_stock;
+      document.getElementById('invOut').textContent   = data.stats.out_of_stock;
+      document.getElementById('invDead').textContent  = data.stats.dead_stock;
+      allInventory = data.inventory;
+      renderInventoryRows(allInventory);
+    });
+}
+
+function renderInventoryRows(items) {
+  const tbody = document.getElementById('inventoryTableBody');
+  if (!items || !items.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--muted)">No inventory data found.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = items.map(item => {
+    let badge = '', rowClass = '', barColor = '';
+    const pct = item.min_stock > 0 ? Math.min(100, (item.stock_qty / (item.min_stock * 5)) * 100) : 100;
+
+    if (item.stock_qty == 0) {
+      badge = '<span class="badge badge-red">Out of Stock</span>'; rowClass='row-out'; barColor='var(--red)';
+    } else if (item.is_low_stock == 1) {
+      badge = '<span class="badge badge-amber">Low Stock</span>'; rowClass='row-low'; barColor='var(--amber)';
+    } else if (item.is_dead_stock == 1) {
+      badge = '<span class="badge badge-violet">Dead Stock</span>'; rowClass='row-dead'; barColor='var(--violet)';
+    } else {
+      badge = '<span class="badge badge-green">In Stock</span>'; barColor='var(--green)';
+    }
+
+    const lastSale = item.days_since_last_sale == null ? 'No sales yet' : item.days_since_last_sale == 0 ? 'Today' : item.days_since_last_sale + ' days ago';
+
+    return `<tr class="${rowClass}">
+      <td class="td-main">${item.product_name}</td>
+      <td><span class="badge badge-muted">${item.category}</span></td>
+      <td>
+        <div class="stock-bar-wrap">
+          <span style="font-weight:600;color:${item.stock_qty<=item.min_stock&&item.stock_qty>0?'var(--amber)':item.stock_qty==0?'var(--red)':'var(--text)'}">${Number(item.stock_qty).toLocaleString()}</span>
+          <div class="stock-bar"><div class="stock-fill" style="width:${pct}%;background:${barColor}"></div></div>
+        </div>
+      </td>
+      <td style="color:var(--muted)">${item.min_stock}</td>
+      <td style="color:var(--muted);font-size:12px">${lastSale}</td>
+      <td>${badge}</td>
+    </tr>`;
+  }).join('');
+}
+
+function filterInventory(type, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (type === 'all')  renderInventoryRows(allInventory);
+  if (type === 'low')  renderInventoryRows(allInventory.filter(i => i.is_low_stock == 1 && i.stock_qty > 0));
+  if (type === 'out')  renderInventoryRows(allInventory.filter(i => i.stock_qty == 0));
+  if (type === 'dead') renderInventoryRows(allInventory.filter(i => i.is_dead_stock == 1));
+}
+
+function searchInventory(q) {
+  const query = q.toLowerCase();
+  renderInventoryRows(allInventory.filter(i => i.product_name.toLowerCase().includes(query) || i.category.toLowerCase().includes(query)));
+}
+</script>
+</body>
+</html>
