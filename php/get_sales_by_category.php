@@ -15,11 +15,11 @@ $user_id = intval($_SESSION['user_id']);
 $sql = "
     SELECT 
         p.category,
-        SUM(s.total_price) AS revenue,
+        SUM(s.amount) AS revenue,
         SUM(s.quantity) AS units_sold
     FROM sales s
     JOIN products p ON s.product_id = p.id
-    WHERE p.vendor_id = $user_id
+    WHERE p.user_id = $user_id
       AND MONTH(s.sale_date) = MONTH(CURDATE())
       AND YEAR(s.sale_date)  = YEAR(CURDATE())
     GROUP BY p.category
