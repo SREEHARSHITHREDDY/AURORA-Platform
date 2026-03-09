@@ -1,10 +1,8 @@
 <?php
 ini_set('session.cookie_samesite', 'Lax');
 session_start();
-
 header('Content-Type: application/json');
 header('Cache-Control: no-cache, no-store, must-revalidate');
-
 require_once 'db_connect.php';
 
 if (!isset($_SESSION['user_id'])) {
@@ -12,164 +10,125 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
-$user_id = $_SESSION['user_id'];
-$period  = $_GET['period'] ?? 'week'; // week | month
+$user_id = intval($_SESSION['user_id']);
 
-// ---- SALES CHART DATA ----
-if ($period === 'week') {
-    // Last 7 days
-    $chart_sql = "SELECT 
-                    DATE_FORMAT(sale_date, '%a') as label,
-                    sale_date,
-                    COALESCE(SUM(amount), 0) as total
-                  FROM sales
-                  WHERE user_id = $user_id
-                  AND sale_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 6 DAY)
-                  GROUP BY sale_date
-                  ORDER BY sale_date ASC";
-} else {
-    // Last 30 days grouped by week
-    $chart_sql = "SELECT 
-                    CONCAT('Week ', WEEK(sale_date) - WEEK(DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)) + 1) as label,
-                    WEEK(sale_date) as sale_date,
-                    COALESCE(SUM(amount), 0) as total
-                  FROM sales
-                  WHERE user_id = $user_id
-                  AND sale_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
-                  GROUP BY WEEK(sale_date)
-                  ORDER BY WEEK(sale_date) ASC";
+// ── Totals this month ─────────────────────────────────────────
+$totals = mysqli_fetch_assoc(mysqli_query($conn, "
+    SELECT
+        COALESCE(SUM(s.amount),   0) AS total_revenue,
+        COALESCE(SUM(s.quantity), 0) AS total_units,
+        COUNT(s.id)                  AS total_orders
+    FROM sales s
+    JOIN products p ON s.product_id = p.id
+    WHERE p.user_id = $user_id
+      AND MONTH(s.sale_date) = MONTH(CURDATE())
+      AND YEAR(s.sale_date)  = YEAR(CURDATE())
+"));
+
+// ── Daily revenue last 30 days ────────────────────────────────
+$daily_revenue = [];
+$res_d = mysqli_query($conn, "
+    SELECT DATE_FORMAT(s.sale_date, '%d %b') AS date,
+           SUM(s.amount)   AS revenue,
+           SUM(s.quantity) AS units
+    FROM sales s
+    JOIN products p ON s.product_id = p.id
+    WHERE p.user_id = $user_id
+      AND s.sale_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+    GROUP BY s.sale_date
+    ORDER BY s.sale_date ASC
+");
+while ($r = mysqli_fetch_assoc($res_d)) {
+    $daily_revenue[] = [
+        'date'    => $r['date'],
+        'revenue' => floatval($r['revenue']),
+        'units'   => intval($r['units'])
+    ];
 }
 
-$chart_res    = mysqli_query($conn, $chart_sql);
-$chart_labels = [];
-$chart_actual = [];
-
-// Build full 7-day array with zeros for missing days
-if ($period === 'week') {
-    $days = [];
-    for ($i = 6; $i >= 0; $i--) {
-        $date  = date('Y-m-d', strtotime("-{$i} days"));
-        $label = date('D', strtotime("-{$i} days"));
-        $days[$date] = ['label' => $label, 'total' => 0];
-    }
-    while ($row = mysqli_fetch_assoc($chart_res)) {
-        if (isset($days[$row['sale_date']])) {
-            $days[$row['sale_date']]['total'] = (float)$row['total'];
-        }
-    }
-    foreach ($days as $d) {
-        $chart_labels[] = $d['label'];
-        $chart_actual[] = $d['total'];
-    }
-} else {
-    while ($row = mysqli_fetch_assoc($chart_res)) {
-        $chart_labels[] = $row['label'];
-        $chart_actual[] = (float)$row['total'];
-    }
+// ── Category revenue this month ───────────────────────────────
+$category_revenue = [];
+$res_c = mysqli_query($conn, "
+    SELECT p.category,
+           SUM(s.amount)   AS revenue,
+           SUM(s.quantity) AS units
+    FROM sales s
+    JOIN products p ON s.product_id = p.id
+    WHERE p.user_id = $user_id
+      AND MONTH(s.sale_date) = MONTH(CURDATE())
+      AND YEAR(s.sale_date)  = YEAR(CURDATE())
+    GROUP BY p.category
+    ORDER BY revenue DESC
+");
+while ($r = mysqli_fetch_assoc($res_c)) {
+    $category_revenue[] = [
+        'category' => $r['category'],
+        'revenue'  => floatval($r['revenue']),
+        'units'    => intval($r['units'])
+    ];
 }
 
-// ---- TARGET LINE ----
-// Average daily target from all products
-$target_sql = "SELECT COALESCE(SUM(target_sales * price), 0) as monthly_target 
-               FROM products 
-               WHERE user_id = $user_id";
-$target_res = mysqli_query($conn, $target_sql);
-$target_row = mysqli_fetch_assoc($target_res);
-$daily_target = $target_row['monthly_target'] > 0
-    ? round($target_row['monthly_target'] / 30)
-    : 30000;
-
-$chart_target = array_fill(0, count($chart_labels), $daily_target);
-
-// ---- TOP SELLING PRODUCTS ----
-$top_sql = "SELECT 
-                p.name,
-                p.category,
-                p.price,
-                p.target_sales,
-                COALESCE(SUM(s.quantity), 0) as units_sold,
-                COALESCE(SUM(s.amount), 0)   as revenue
-            FROM products p
-            LEFT JOIN sales s ON p.id = s.product_id
-                AND MONTH(s.sale_date) = MONTH(CURRENT_DATE())
-                AND YEAR(s.sale_date)  = YEAR(CURRENT_DATE())
-            WHERE p.user_id = $user_id
-            GROUP BY p.id
-            ORDER BY revenue DESC
-            LIMIT 5";
-
-$top_res      = mysqli_query($conn, $top_sql);
-$top_products = [];
-$max_revenue  = 0;
-
-while ($row = mysqli_fetch_assoc($top_res)) {
-    if ($row['revenue'] > $max_revenue) $max_revenue = $row['revenue'];
-    $top_products[] = $row;
+// ── Recent sales transactions (last 100) ─────────────────────
+$recent_sales = [];
+$res_s = mysqli_query($conn, "
+    SELECT p.name, p.category,
+           s.quantity, s.amount,
+           DATE_FORMAT(s.sale_date, '%d %b %Y') AS sale_date
+    FROM sales s
+    JOIN products p ON s.product_id = p.id
+    WHERE p.user_id = $user_id
+    ORDER BY s.sale_date DESC, s.id DESC
+    LIMIT 100
+");
+while ($r = mysqli_fetch_assoc($res_s)) {
+    $recent_sales[] = $r;
 }
 
-// Add percentage for progress bar
-foreach ($top_products as &$p) {
-    $p['percentage'] = $max_revenue > 0
-        ? round(($p['revenue'] / $max_revenue) * 100)
-        : 0;
-    $p['vs_target'] = $p['target_sales'] > 0
-        ? round(($p['units_sold'] / $p['target_sales']) * 100)
-        : 0;
-}
+// ── Best sellers this month ───────────────────────────────────
+$best_sellers = [];
+$res_bs = mysqli_query($conn, "
+    SELECT p.name, p.category,
+           SUM(s.quantity) AS units_sold,
+           SUM(s.amount)   AS revenue
+    FROM sales s
+    JOIN products p ON s.product_id = p.id
+    WHERE p.user_id = $user_id
+      AND MONTH(s.sale_date) = MONTH(CURDATE())
+      AND YEAR(s.sale_date)  = YEAR(CURDATE())
+    GROUP BY p.id, p.name, p.category
+    ORDER BY revenue DESC
+    LIMIT 5
+");
+while ($r = mysqli_fetch_assoc($res_bs)) $best_sellers[] = $r;
 
-// ---- RECENT ACTIVITY ----
-$activity_sql = "SELECT 
-                    s.quantity,
-                    s.amount,
-                    s.sale_date,
-                    p.name as product_name,
-                    p.category
-                 FROM sales s
-                 JOIN products p ON s.product_id = p.id
-                 WHERE s.user_id = $user_id
-                 ORDER BY s.created_at DESC
-                 LIMIT 8";
+// ── Target vs actual ─────────────────────────────────────────
+$target_vs_actual = [];
+$res_tv = mysqli_query($conn, "
+    SELECT p.name, p.target_sales,
+           COALESCE(SUM(s.quantity),0) AS actual_sales,
+           ROUND(COALESCE(SUM(s.quantity),0) / p.target_sales * 100) AS achievement
+    FROM products p
+    LEFT JOIN sales s ON s.product_id = p.id
+        AND MONTH(s.sale_date) = MONTH(CURDATE())
+        AND YEAR(s.sale_date)  = YEAR(CURDATE())
+    WHERE p.user_id = $user_id AND p.target_sales > 0
+    GROUP BY p.id, p.name, p.target_sales
+    ORDER BY achievement DESC
+    LIMIT 5
+");
+while ($r = mysqli_fetch_assoc($res_tv)) $target_vs_actual[] = $r;
 
-$activity_res  = mysqli_query($conn, $activity_sql);
-$recent_sales  = [];
-while ($row = mysqli_fetch_assoc($activity_res)) {
-    $recent_sales[] = $row;
-}
-
-// ---- UNDERPERFORMING PRODUCTS (for alerts) ----
-$under_sql = "SELECT 
-                p.name,
-                p.category,
-                p.target_sales,
-                COALESCE(SUM(s.quantity), 0) as units_sold,
-                ROUND((COALESCE(SUM(s.quantity), 0) / p.target_sales) * 100) as achievement
-              FROM products p
-              LEFT JOIN sales s ON p.id = s.product_id
-                AND MONTH(s.sale_date) = MONTH(CURRENT_DATE())
-              WHERE p.user_id = $user_id
-              GROUP BY p.id
-              HAVING achievement < 70
-              ORDER BY achievement ASC
-              LIMIT 4";
-
-$under_res      = mysqli_query($conn, $under_sql);
-$underperforming = [];
-while ($row = mysqli_fetch_assoc($under_res)) {
-    $underperforming[] = $row;
-}
-
-// Return everything as JSON
 echo json_encode([
-    'status'          => 'success',
-    'chart' => [
-        'labels'  => $chart_labels,
-        'actual'  => $chart_actual,
-        'target'  => $chart_target,
-    ],
-    'top_products'    => $top_products,
-    'recent_sales'    => $recent_sales,
-    'underperforming' => $underperforming,
-    'daily_target'    => $daily_target,
+    'status'           => 'success',
+    'user_name'        => $_SESSION['user_name'] ?? '',
+    'total_revenue'    => floatval($totals['total_revenue']),
+    'total_units'      => intval($totals['total_units']),
+    'total_orders'     => intval($totals['total_orders']),
+    'daily_revenue'    => $daily_revenue,
+    'category_revenue' => $category_revenue,
+    'recent_sales'     => $recent_sales,
+    'best_sellers'     => $best_sellers,
+    'target_vs_actual' => $target_vs_actual
 ]);
 
 mysqli_close($conn);
