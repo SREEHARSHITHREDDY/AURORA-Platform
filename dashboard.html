@@ -20,15 +20,15 @@
     <div class="sidebar-section">
       <div class="sidebar-label">Main</div>
       <a href="dashboard.html" class="sidebar-item active"><span class="sidebar-icon">⊞</span> Dashboard</a>
-      <a href="sales.html" class="sidebar-item"><span class="sidebar-icon">📈</span> Sales</a>
+      <a href="sales.html"     class="sidebar-item"><span class="sidebar-icon">📈</span> Sales</a>
       <a href="inventory.html" class="sidebar-item"><span class="sidebar-icon">📦</span> Inventory</a>
-      <a href="reviews.html" class="sidebar-item"><span class="sidebar-icon">💬</span> Reviews</a>
+      <a href="reviews.html"   class="sidebar-item"><span class="sidebar-icon">💬</span> Reviews</a>
     </div>
     <div class="sidebar-section">
       <div class="sidebar-label">Intelligence</div>
       <a href="strategies.html" class="sidebar-item"><span class="sidebar-icon">🧠</span> Strategies</a>
-      <a href="forecast.html" class="sidebar-item"><span class="sidebar-icon">🔮</span> Forecast</a>
-      <a href="reports.html" class="sidebar-item"><span class="sidebar-icon">📄</span> Reports</a>
+      <a href="forecast.html"   class="sidebar-item"><span class="sidebar-icon">🔮</span> Forecast</a>
+      <a href="reports.html"    class="sidebar-item"><span class="sidebar-icon">📄</span> Reports</a>
     </div>
     <div class="sidebar-section">
       <div class="sidebar-label">Data</div>
@@ -44,10 +44,11 @@
       </div>
     </div>
   </aside>
+
   <main class="main-content">
     <div class="page-header">
       <div>
-        <div class="page-title greeting-text">Good morning 👋</div>
+        <div class="page-title" id="greetingText">Good morning 👋</div>
         <div class="page-subtitle">Here's your business intelligence overview for today</div>
       </div>
     </div>
@@ -57,7 +58,7 @@
         <div class="stat-icon">💰</div>
         <div class="stat-value" id="totalRevenue">—</div>
         <div class="stat-label">Total Revenue</div>
-        <span class="stat-change up" id="revenueChange">↑ Loading...</span>
+        <span class="stat-change up" id="revenueChange">↑ This month</span>
       </div>
       <div class="stat-card green">
         <div class="stat-icon">🛒</div>
@@ -75,7 +76,7 @@
         <div class="stat-icon">📦</div>
         <div class="stat-value" id="totalStock">—</div>
         <div class="stat-label">Total Stock</div>
-        <span class="stat-change neutral" id="stockAlerts">↑ Loading...</span>
+        <span class="stat-change neutral" id="stockAlerts">↑ All products</span>
       </div>
     </div>
 
@@ -128,6 +129,164 @@
 </div>
 
 <script src="js/main.js"></script>
-<script src="js/sales.js"></script>
+<script>
+let revenueChart = null, categoryChart = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Greeting
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('greetingText').textContent = greeting + ' 👋';
+
+  loadDashboard();
+  AutoRefresh.register(loadDashboard);
+});
+
+function loadDashboard() {
+  // Load stats
+  fetch('php/get_dashboard_stats.php', { credentials: 'same-origin' })
+    .then(r => r.json())
+    .then(data => {
+      if (data.status !== 'success') return;
+
+      // User name
+      if (data.user_name) {
+        document.getElementById('userName').textContent = data.user_name;
+        document.getElementById('userAvatar').textContent = data.user_name.charAt(0).toUpperCase();
+      }
+
+      document.getElementById('totalRevenue').textContent  = '₹' + Number(data.total_revenue  || 0).toLocaleString('en-IN');
+      document.getElementById('totalOrders').textContent   = Number(data.total_orders   || 0).toLocaleString();
+      document.getElementById('sentimentScore').textContent= (data.sentiment_score || 0) + '%';
+      document.getElementById('totalStock').textContent    = Number(data.total_stock    || 0).toLocaleString();
+      document.getElementById('stockAlerts').textContent   = (data.strategy_alerts || 0) + ' strategy alerts';
+
+      // Best sellers
+      const bsl = document.getElementById('bestSellersList');
+      const sellers = data.best_sellers || [];
+      if (sellers.length) {
+        const max = Math.max(...sellers.map(s => parseFloat(s.revenue)));
+        bsl.innerHTML = sellers.map((s, i) => `
+          <div style="margin-bottom:12px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+              <span style="font-size:13px;color:var(--text2)">${i+1}. ${s.name}</span>
+              <span style="font-size:13px;font-weight:700;font-family:var(--font-head)">₹${Number(s.revenue).toLocaleString('en-IN')}</span>
+            </div>
+            <div class="product-bar">
+              <div class="product-fill" style="width:${max>0?Math.round((s.revenue/max)*100):0}%"></div>
+            </div>
+          </div>`).join('');
+      } else {
+        bsl.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:12px">No sales data yet.</div>';
+      }
+
+      // Target vs Actual
+      const tl = document.getElementById('targetList');
+      const targets = data.target_vs_actual || [];
+      if (targets.length) {
+        tl.innerHTML = targets.map(t => {
+          const pct = Math.min(t.achievement, 100);
+          const color = pct >= 80 ? 'var(--green)' : pct >= 50 ? 'var(--amber)' : 'var(--red)';
+          return `
+          <div style="margin-bottom:12px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+              <span style="font-size:13px;color:var(--text2)">${t.name}</span>
+              <span style="font-size:13px;font-weight:700;color:${color}">${t.achievement}%</span>
+            </div>
+            <div class="product-bar">
+              <div class="product-fill" style="width:${pct}%;background:${color}"></div>
+            </div>
+          </div>`;
+        }).join('');
+      } else {
+        tl.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:12px">No target data.</div>';
+      }
+    });
+
+  // Load sales data for charts
+  fetch('php/get_sales.php', { credentials: 'same-origin' })
+    .then(r => r.json())
+    .then(data => {
+      if (data.status !== 'success') return;
+      renderRevenueChart(data.daily_revenue || []);
+      renderCategoryChart(data.category_revenue || []);
+    });
+
+  // Load strategy alerts
+  fetch('php/get_strategies.php', { credentials: 'same-origin' })
+    .then(r => r.json())
+    .then(data => {
+      if (data.status !== 'success') return;
+      const alerts = (data.strategies || []).filter(s => s.priority === 'critical').slice(0, 5);
+      const al = document.getElementById('alertsList');
+      if (!alerts.length) {
+        al.innerHTML = '<div style="padding:16px;color:var(--green);font-size:13px">✅ No critical alerts — your business is on track!</div>';
+        return;
+      }
+      al.innerHTML = alerts.map(s => `
+        <div style="display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)">
+          <div style="font-size:18px;flex-shrink:0">🔴</div>
+          <div>
+            <div style="font-size:13px;font-weight:600;margin-bottom:2px">${s.title}</div>
+            <div style="font-size:12px;color:var(--muted)">${s.recommendation}</div>
+          </div>
+        </div>`).join('');
+    });
+}
+
+function renderRevenueChart(daily) {
+  const canvas = document.getElementById('revenueChart');
+  if (!canvas) return;
+  if (revenueChart) revenueChart.destroy();
+  // Show last 7 days
+  const last7 = daily.slice(-7);
+  revenueChart = new Chart(canvas.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: last7.map(d => d.date || d.label || ''),
+      datasets: [{
+        label: 'Revenue',
+        data: last7.map(d => d.revenue || d.amount || 0),
+        backgroundColor: 'rgba(79,139,255,0.6)',
+        borderRadius: 6,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false },
+        tooltip: { backgroundColor:'#111827', borderColor:'#1e2740', borderWidth:1, titleColor:'#f0f4ff', bodyColor:'#94a3b8',
+          callbacks: { label: ctx => ' ₹' + Number(ctx.raw).toLocaleString('en-IN') } } },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#64748b', font: { size: 10 } } },
+        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#64748b', font: { size: 10 },
+          callback: v => '₹' + (v >= 1000 ? (v/1000).toFixed(0)+'k' : v) } }
+      }
+    }
+  });
+}
+
+function renderCategoryChart(cats) {
+  const canvas = document.getElementById('categoryChart');
+  if (!canvas || !cats.length) return;
+  if (categoryChart) categoryChart.destroy();
+  const colors = ['rgba(79,139,255,0.8)','rgba(139,92,246,0.8)','rgba(245,158,11,0.8)','rgba(16,185,129,0.8)','rgba(239,68,68,0.8)','rgba(14,165,233,0.8)'];
+  categoryChart = new Chart(canvas.getContext('2d'), {
+    type: 'doughnut',
+    data: {
+      labels: cats.map(c => c.category),
+      datasets: [{ data: cats.map(c => c.revenue || c.amount || 0), backgroundColor: colors, borderWidth: 0 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '65%',
+      plugins: {
+        legend: { position: 'bottom', labels: { color: '#7a8aaa', font: { size: 11 }, boxWidth: 10, padding: 10 } },
+        tooltip: { backgroundColor:'#111827', borderColor:'#1e2740', borderWidth:1, titleColor:'#f0f4ff', bodyColor:'#94a3b8',
+          callbacks: { label: ctx => ' ₹' + Number(ctx.raw).toLocaleString('en-IN') } }
+      }
+    }
+  });
+}
+</script>
 </body>
 </html>
