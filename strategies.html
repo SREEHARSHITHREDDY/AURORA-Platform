@@ -3,86 +3,8 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Strategy Engine — AURORA</title>
+  <title>Strategies — AURORA</title>
   <link rel="stylesheet" href="css/style.css"/>
-  <style>
-    .strategy-card {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: var(--r-md);
-      padding: 20px;
-      margin-bottom: 14px;
-      transition: transform var(--t-fast), box-shadow var(--t-fast);
-      position: relative;
-      overflow: hidden;
-    }
-    .strategy-card::before {
-      content: '';
-      position: absolute;
-      left: 0; top: 0; bottom: 0;
-      width: 4px;
-    }
-    .strategy-card.critical::before { background: var(--red); }
-    .strategy-card.medium::before   { background: var(--amber); }
-    .strategy-card.low::before      { background: var(--green); }
-    .strategy-card:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
-
-    .strategy-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 12px;
-      margin-bottom: 10px;
-    }
-    .strategy-icon { font-size: 24px; flex-shrink: 0; margin-top: 2px; }
-    .strategy-title {
-      font-family: var(--font-head);
-      font-size: 15px;
-      font-weight: 700;
-      color: var(--text);
-      margin-bottom: 2px;
-    }
-    .strategy-product { font-size: 12px; color: var(--muted); }
-    .strategy-desc {
-      font-size: 13px;
-      color: var(--text2);
-      line-height: 1.6;
-      margin-bottom: 12px;
-      padding-left: 36px;
-    }
-    .strategy-metrics {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      padding-left: 36px;
-    }
-
-    .summary-bar {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-    .summary-card {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: var(--r-md);
-      padding: 16px 20px;
-      text-align: center;
-    }
-    .summary-num { font-family: var(--font-head); font-size: 28px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
-    .summary-label { font-size: 12px; color: var(--muted); }
-
-    .filter-btn { padding:7px 18px; border-radius:var(--r-sm); border:1px solid var(--border2); background:var(--surface2); color:var(--muted); font-size:12px; cursor:pointer; transition:all var(--t-fast); }
-    .filter-btn:hover { border-color:var(--blue); color:var(--blue); }
-    .filter-btn.active { background:var(--blue-dim); border-color:var(--blue); color:var(--blue); font-weight:500; }
-
-    .empty-state { text-align:center; padding:64px 24px; }
-    .empty-state .emoji { font-size:48px; margin-bottom:16px; }
-    .empty-state .title { font-family:var(--font-head); font-size:20px; font-weight:700; margin-bottom:8px; }
-
-    @media (max-width:700px) { .summary-bar { grid-template-columns:1fr 1fr; } }
-  </style>
 </head>
 <body>
 <nav class="navbar scrolled">
@@ -94,15 +16,19 @@
     <div class="sidebar-section">
       <div class="sidebar-label">Main</div>
       <a href="dashboard.html" class="sidebar-item"><span class="sidebar-icon">⊞</span> Dashboard</a>
-      <a href="sales.html"     class="sidebar-item"><span class="sidebar-icon">📈</span> Sales</a>
+      <a href="sales.html" class="sidebar-item"><span class="sidebar-icon">📈</span> Sales</a>
       <a href="inventory.html" class="sidebar-item"><span class="sidebar-icon">📦</span> Inventory</a>
-      <a href="reviews.html"   class="sidebar-item"><span class="sidebar-icon">💬</span> Reviews</a>
+      <a href="reviews.html" class="sidebar-item"><span class="sidebar-icon">💬</span> Reviews</a>
     </div>
     <div class="sidebar-section">
       <div class="sidebar-label">Intelligence</div>
       <a href="strategies.html" class="sidebar-item active"><span class="sidebar-icon">🧠</span> Strategies</a>
-      <a href="forecast.html"   class="sidebar-item"><span class="sidebar-icon">🔮</span> Forecast</a>
-      <a href="reports.html"    class="sidebar-item"><span class="sidebar-icon">📄</span> Reports</a>
+      <a href="forecast.html" class="sidebar-item"><span class="sidebar-icon">🔮</span> Forecast</a>
+      <a href="reports.html" class="sidebar-item"><span class="sidebar-icon">📄</span> Reports</a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Data</div>
+      <a href="manage.html" class="sidebar-item"><span class="sidebar-icon">✏️</span> Manage Data</a>
     </div>
     <div class="sidebar-footer">
       <div class="sidebar-user">
@@ -114,149 +40,33 @@
       </div>
     </div>
   </aside>
-
   <main class="main-content">
     <div class="page-header">
       <div>
-        <div class="page-title">🧠 Strategy Recommendation Engine</div>
-        <div class="page-subtitle">AI-powered rule-based analysis of your sales, inventory and sentiment data</div>
+        <div class="page-title">🧠 Strategy Recommendations</div>
+        <div class="page-subtitle">AI-powered business recommendations based on your live data — 8 intelligent rules</div>
       </div>
-      <button class="btn btn-primary btn-sm" onclick="loadStrategies()">↻ Refresh Analysis</button>
+      <button class="btn btn-primary" onclick="loadStrategies()">↻ Refresh</button>
     </div>
 
-    <!-- SUMMARY BAR -->
-    <div class="summary-bar">
-      <div class="summary-card">
-        <div class="summary-num" id="totalCount" style="color:var(--blue)">—</div>
-        <div class="summary-label">Total Strategies</div>
-      </div>
-      <div class="summary-card">
-        <div class="summary-num" id="criticalCount" style="color:var(--red)">—</div>
-        <div class="summary-label">🔴 Critical</div>
-      </div>
-      <div class="summary-card">
-        <div class="summary-num" id="mediumCount" style="color:var(--amber)">—</div>
-        <div class="summary-label">🟡 Medium</div>
-      </div>
-      <div class="summary-card">
-        <div class="summary-num" id="lowCount" style="color:var(--green)">—</div>
-        <div class="summary-label">🟢 Low Priority</div>
-      </div>
+    <div class="stat-grid">
+      <div class="stat-card red"><div class="stat-icon">🔴</div><div class="stat-value" id="criticalCount">—</div><div class="stat-label">Critical Alerts</div><span class="stat-change danger">Immediate action</span></div>
+      <div class="stat-card amber"><div class="stat-icon">🟡</div><div class="stat-value" id="mediumCount">—</div><div class="stat-label">Medium Priority</div><span class="stat-change warning">Review soon</span></div>
+      <div class="stat-card green"><div class="stat-icon">🟢</div><div class="stat-value" id="lowCount">—</div><div class="stat-label">Opportunities</div><span class="stat-change up">Growth potential</span></div>
+      <div class="stat-card blue"><div class="stat-icon">📋</div><div class="stat-value" id="totalCount">—</div><div class="stat-label">Total Strategies</div><span class="stat-change up">↑ All products</span></div>
     </div>
 
-    <!-- FILTER BAR -->
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap">
-      <span style="font-size:12px;color:var(--muted)">Filter:</span>
-      <button class="filter-btn active" onclick="filterStrategies('all',this)">All</button>
-      <button class="filter-btn" onclick="filterStrategies('critical',this)">🔴 Critical</button>
-      <button class="filter-btn" onclick="filterStrategies('medium',this)">🟡 Medium</button>
-      <button class="filter-btn" onclick="filterStrategies('low',this)">🟢 Low Priority</button>
+    <div style="display:flex;gap:8px;margin-bottom:20px">
+      <button class="btn btn-sm btn-primary" onclick="filterStrats('all',this)">All</button>
+      <button class="btn btn-sm btn-ghost" onclick="filterStrats('critical',this)">🔴 Critical</button>
+      <button class="btn btn-sm btn-ghost" onclick="filterStrats('medium',this)">🟡 Medium</button>
+      <button class="btn btn-sm btn-ghost" onclick="filterStrats('low',this)">🟢 Low</button>
     </div>
 
-    <!-- STRATEGIES LIST -->
-    <div id="strategiesContainer">
-      <div style="text-align:center;padding:48px">
-        <div class="spinner" style="margin:0 auto 12px;width:36px;height:36px"></div>
-        <div class="text-muted">Analysing your business data...</div>
-      </div>
-    </div>
+    <div id="strategyCards"><div class="spinner" style="margin:48px auto"></div></div>
   </main>
 </div>
-
 <script src="js/main.js"></script>
-<script>
-let allStrategies = [];
-
-const TYPE_ICONS = {
-  restock:    '🔁',
-  clearance:  '🏷️',
-  discount:   '💸',
-  promote:    '📣',
-  quality:    '⭐',
-  bundle:     '📦',
-  reposition: '🔄'
-};
-
-document.addEventListener('DOMContentLoaded', loadStrategies);
-
-function loadStrategies() {
-  const container = document.getElementById('strategiesContainer');
-  container.innerHTML = `<div style="text-align:center;padding:48px">
-    <div class="spinner" style="margin:0 auto 12px;width:36px;height:36px"></div>
-    <div class="text-muted">Analysing your business data...</div>
-  </div>`;
-
-  fetch('php/get_strategies.php', { credentials: 'same-origin' })
-    .then(r => r.json())
-    .then(data => {
-      if (data.status !== 'success') {
-        container.innerHTML = `<div style="text-align:center;padding:32px;color:var(--red)">Failed to load strategies. Please log in again.</div>`;
-        return;
-      }
-      if (data.user_name) document.getElementById('sidebarName').textContent = data.user_name.split(' ')[0];
-
-      // Update summary
-      document.getElementById('totalCount').textContent    = data.summary.total;
-      document.getElementById('criticalCount').textContent = data.summary.critical;
-      document.getElementById('mediumCount').textContent   = data.summary.medium;
-      document.getElementById('lowCount').textContent      = data.summary.low;
-
-      allStrategies = data.strategies;
-      renderStrategies(allStrategies);
-    })
-    .catch(() => {
-      container.innerHTML = `<div style="text-align:center;padding:32px;color:var(--red)">Network error. Please refresh and try again.</div>`;
-    });
-}
-
-function renderStrategies(strategies) {
-  const container = document.getElementById('strategiesContainer');
-
-  if (!strategies || strategies.length === 0) {
-    container.innerHTML = `
-      <div class="empty-state">
-        <div class="emoji">✅</div>
-        <div class="title">All products are on track!</div>
-        <div class="text-muted">No strategy interventions needed right now. Keep up the great work!</div>
-      </div>`;
-    return;
-  }
-
-  container.innerHTML = strategies.map(s => {
-    const icon = TYPE_ICONS[s.type] || '🧠';
-    const badgeClass = s.priority === 'critical' ? 'badge-red' : s.priority === 'medium' ? 'badge-amber' : 'badge-green';
-    const priorityLabel = s.priority.charAt(0).toUpperCase() + s.priority.slice(1);
-
-    return `
-    <div class="strategy-card ${s.priority}" data-priority="${s.priority}">
-      <div class="strategy-header">
-        <div style="display:flex;align-items:flex-start;gap:12px">
-          <div class="strategy-icon">${icon}</div>
-          <div>
-            <div class="strategy-title">${s.title}</div>
-            <div class="strategy-product">${s.product_name} &nbsp;·&nbsp; ${s.category}</div>
-          </div>
-        </div>
-        <span class="badge ${badgeClass}" style="flex-shrink:0">${priorityLabel}</span>
-      </div>
-      <div class="strategy-desc">${s.description}</div>
-      <div class="strategy-metrics">
-        <span class="badge badge-muted">📦 Sold: ${s.metrics.sold} / ${s.metrics.target}</span>
-        <span class="badge badge-muted">🎯 Achievement: ${s.metrics.achievement}%</span>
-        <span class="badge badge-muted">🏬 Stock: ${s.metrics.stock}</span>
-        ${s.metrics.days_no_sale > 0 ? `<span class="badge badge-violet">🕐 No sale: ${s.metrics.days_no_sale} days</span>` : ''}
-        ${s.metrics.sentiment !== undefined ? `<span class="badge badge-muted">⭐ Sentiment: ${s.metrics.sentiment}%</span>` : ''}
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function filterStrategies(priority, btn) {
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  if (priority === 'all') renderStrategies(allStrategies);
-  else renderStrategies(allStrategies.filter(s => s.priority === priority));
-}
-</script>
+<script src="js/strategies.js"></script>
 </body>
 </html>

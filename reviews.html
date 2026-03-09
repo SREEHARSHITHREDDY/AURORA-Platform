@@ -3,30 +3,12 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Review Sentiment — AURORA</title>
+  <title>Reviews — AURORA</title>
   <link rel="stylesheet" href="css/style.css"/>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    .filter-btn { padding:7px 16px; border-radius:var(--r-sm); border:1px solid var(--border2); background:var(--surface2); color:var(--muted); font-size:12px; cursor:pointer; transition:all var(--t-fast); }
-    .filter-btn:hover { border-color:var(--blue); color:var(--blue); }
-    .filter-btn.active { background:var(--blue-dim); border-color:var(--blue); color:var(--blue); font-weight:500; }
-    .reviews-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px; }
-    .review-card { background:var(--surface2); border:1px solid var(--border); border-radius:var(--r-md); padding:16px; margin-bottom:12px; }
-    .review-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; }
-    .review-product { font-weight:600; font-size:13px; color:var(--text); }
-    .review-text { font-size:13px; color:var(--text2); line-height:1.5; margin-bottom:10px; }
-    .review-meta { display:flex; gap:10px; align-items:center; font-size:11px; color:var(--muted); }
-    .sentiment-score { display:flex; align-items:center; gap:10px; padding:12px 0; border-bottom:1px solid var(--border); }
-    .sentiment-score:last-child { border-bottom:none; }
-    .sentiment-name { flex:1; font-size:13px; color:var(--text2); }
-    .sentiment-bar { flex:2; height:6px; background:var(--border2); border-radius:3px; overflow:hidden; }
-    .sentiment-fill { height:100%; border-radius:3px; }
-    .sentiment-pct { font-size:12px; font-weight:600; width:35px; text-align:right; }
-    @media (max-width:900px) { .reviews-grid { grid-template-columns:1fr; } }
-  </style>
 </head>
 <body>
-<nav class="navbar scrolled"><a href="index.html" class="nav-brand"><div class="nav-brand-icon">◈</div>AURORA</a>
+<nav class="navbar scrolled">
+  <a href="index.html" class="nav-brand"><div class="nav-brand-icon">◈</div>AURORA</a>
   <div class="nav-actions"><a href="php/logout.php" class="btn btn-ghost btn-sm">Sign Out</a></div>
 </nav>
 <div class="layout">
@@ -44,6 +26,10 @@
       <a href="forecast.html" class="sidebar-item"><span class="sidebar-icon">🔮</span> Forecast</a>
       <a href="reports.html" class="sidebar-item"><span class="sidebar-icon">📄</span> Reports</a>
     </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Data</div>
+      <a href="manage.html" class="sidebar-item"><span class="sidebar-icon">✏️</span> Manage Data</a>
+    </div>
     <div class="sidebar-footer">
       <div class="sidebar-user">
         <div class="user-avatar">S</div>
@@ -56,145 +42,64 @@
   </aside>
   <main class="main-content">
     <div class="page-header">
-      <div class="page-title">Review Sentiment Analysis</div>
-      <div class="page-subtitle">AI keyword analysis of customer reviews from your database</div>
+      <div class="page-title">💬 Customer Reviews & Sentiment</div>
+      <div class="page-subtitle">AI-powered keyword sentiment analysis across all your products</div>
     </div>
 
-    <!-- STAT CARDS -->
     <div class="stat-grid">
-      <div class="stat-card green"><div class="stat-icon">⭐</div><div class="stat-value" id="avgSentiment">—</div><div class="stat-label">Avg Sentiment Score</div><span class="stat-change up" id="sentimentLabel">Loading...</span></div>
-      <div class="stat-card blue"><div class="stat-icon">💬</div><div class="stat-value" id="totalReviews">—</div><div class="stat-label">Total Reviews</div><span class="stat-change up">↑ From database</span></div>
-      <div class="stat-card amber"><div class="stat-icon">😊</div><div class="stat-value" id="posCount">—</div><div class="stat-label">Positive Reviews</div><span class="stat-change up">Happy customers</span></div>
-      <div class="stat-card red"><div class="stat-icon">😟</div><div class="stat-value" id="negCount">—</div><div class="stat-label">Negative Reviews</div><span class="stat-change down">Need attention</span></div>
+      <div class="stat-card green"><div class="stat-icon">😊</div><div class="stat-value" id="overallScore">—</div><div class="stat-label">Overall Sentiment</div><span class="stat-change up">↑ All reviews</span></div>
+      <div class="stat-card blue"><div class="stat-icon">📝</div><div class="stat-value" id="totalReviews">—</div><div class="stat-label">Total Reviews</div><span class="stat-change up">↑ All products</span></div>
+      <div class="stat-card green"><div class="stat-icon">👍</div><div class="stat-value" id="positiveCount">—</div><div class="stat-label">Positive</div><span class="stat-change up">↑ Happy customers</span></div>
+      <div class="stat-card red"><div class="stat-icon">👎</div><div class="stat-value" id="negativeCount">—</div><div class="stat-label">Negative</div><span class="stat-change danger">Needs attention</span></div>
     </div>
 
-    <div class="reviews-grid">
-      <!-- SENTIMENT BY PRODUCT -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
       <div class="card">
-        <div class="card-header">
-          <div class="card-title">Sentiment by Product</div>
-          <div class="card-subtitle">Keyword-based analysis</div>
-        </div>
-        <div id="sentimentList" style="margin-top:8px">
-          <div class="spinner" style="margin:24px auto"></div>
-        </div>
+        <div class="card-header"><div class="card-title">Per-Product Sentiment</div><div class="card-subtitle">Ranked by sentiment score</div></div>
+        <div id="productSentimentList" style="margin-top:12px"><div class="spinner" style="margin:24px auto"></div></div>
       </div>
-      <!-- SENTIMENT PIE CHART -->
       <div class="card">
-        <div class="card-header">
-          <div class="card-title">Sentiment Distribution</div>
-          <div class="card-subtitle">Positive vs Negative vs Neutral</div>
-        </div>
-        <div class="chart-container" style="height:200px"><canvas id="sentimentChart"></canvas></div>
-        <div id="sentimentLegend" style="margin-top:16px"></div>
+        <div class="card-header"><div class="card-title">Recent Reviews</div><div class="card-subtitle">Latest customer feedback</div></div>
+        <div id="reviewCards" style="margin-top:12px"><div class="spinner" style="margin:24px auto"></div></div>
       </div>
-    </div>
-
-    <!-- FILTER BAR -->
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap">
-      <span style="font-size:12px;color:var(--muted)">Filter reviews:</span>
-      <button class="filter-btn active" onclick="filterReviews('all',this)">All</button>
-      <button class="filter-btn" onclick="filterReviews('positive',this)">Positive 😊</button>
-      <button class="filter-btn" onclick="filterReviews('neutral',this)">Neutral 😐</button>
-      <button class="filter-btn" onclick="filterReviews('negative',this)">Negative 😟</button>
-    </div>
-
-    <!-- REVIEWS LIST -->
-    <div id="reviewsList">
-      <div style="text-align:center;padding:32px"><div class="spinner" style="margin:0 auto 8px"></div><div class="text-muted text-sm">Loading reviews...</div></div>
     </div>
   </main>
 </div>
 <script src="js/main.js"></script>
 <script>
-let allReviews = [], sentimentChartInstance = null;
+document.addEventListener('DOMContentLoaded', () => {
+  fetch('php/get_reviews.php', { credentials:'same-origin' }).then(r => r.json()).then(data => {
+    if (data.status !== 'success') return;
+    if (data.user_name) document.getElementById('sidebarName').textContent = data.user_name.split(' ')[0];
+    document.getElementById('overallScore').textContent  = (data.overall_sentiment||0) + '%';
+    document.getElementById('totalReviews').textContent  = Number(data.total_reviews||0).toLocaleString();
+    document.getElementById('positiveCount').textContent = Number(data.positive_count||0).toLocaleString();
+    document.getElementById('negativeCount').textContent = Number(data.negative_count||0).toLocaleString();
 
-document.addEventListener('DOMContentLoaded', () => { loadReviews(); });
-
-function loadReviews() {
-  fetch('php/get_reviews.php', { credentials:'same-origin' })
-    .then(r => r.json()).then(data => {
-      if (data.status !== 'success') {
-        document.getElementById('reviewsList').innerHTML = '<div style="text-align:center;padding:32px;color:var(--red)">Failed to load reviews. Please log in again.</div>';
-        return;
-      }
-      if (data.user_name) document.getElementById('sidebarName').textContent = data.user_name.split(' ')[0];
-      updateStats(data.stats);
-      renderSentimentList(data.by_product);
-      renderSentimentChart(data.stats);
-      allReviews = data.reviews;
-      renderReviews(allReviews);
-    });
-}
-
-function updateStats(stats) {
-  document.getElementById('avgSentiment').textContent = stats.avg_score + '%';
-  document.getElementById('totalReviews').textContent = Number(stats.total).toLocaleString();
-  document.getElementById('posCount').textContent     = stats.positive;
-  document.getElementById('negCount').textContent     = stats.negative;
-  const sl = document.getElementById('sentimentLabel');
-  sl.className = 'stat-change ' + (stats.avg_score >= 60 ? 'up' : 'down');
-  sl.textContent = stats.avg_score >= 60 ? '↑ Good sentiment' : '↓ Needs improvement';
-}
-
-function renderSentimentList(products) {
-  if (!products || !products.length) { document.getElementById('sentimentList').innerHTML = '<div class="text-muted text-sm">No product data.</div>'; return; }
-  document.getElementById('sentimentList').innerHTML = products.slice(0,8).map(p => {
-    const color = p.score >= 70 ? 'var(--green)' : p.score >= 40 ? 'var(--amber)' : 'var(--red)';
-    return `<div class="sentiment-score">
-      <div class="sentiment-name">${p.product_name}</div>
-      <div class="sentiment-bar"><div class="sentiment-fill" style="width:${p.score}%;background:${color}"></div></div>
-      <div class="sentiment-pct" style="color:${color}">${p.score}%</div>
-    </div>`;
-  }).join('');
-}
-
-function renderSentimentChart(stats) {
-  const canvas = document.getElementById('sentimentChart'); if(!canvas)return;
-  if (sentimentChartInstance) sentimentChartInstance.destroy();
-  sentimentChartInstance = new Chart(canvas.getContext('2d'), {
-    type: 'doughnut',
-    data: { labels:['Positive','Neutral','Negative'], datasets:[{ data:[stats.positive, stats.neutral, stats.negative],
-      backgroundColor:['rgba(16,185,129,0.85)','rgba(100,116,139,0.6)','rgba(239,68,68,0.85)'], borderWidth:0, hoverOffset:4 }] },
-    options: { responsive:true, maintainAspectRatio:false, cutout:'68%',
-      plugins:{ legend:{ display:false },
-        tooltip:{ backgroundColor:'#111827', borderColor:'#1e2740', borderWidth:1, titleColor:'#f0f4ff', bodyColor:'#94a3b8' } } }
-  });
-  document.getElementById('sentimentLegend').innerHTML = `
-    <div style="display:flex;justify-content:space-around;flex-wrap:wrap;gap:8px">
-      <div style="text-align:center"><div style="font-size:18px;font-weight:700;color:var(--green)">${stats.positive}</div><div style="font-size:11px;color:var(--muted)">Positive</div></div>
-      <div style="text-align:center"><div style="font-size:18px;font-weight:700;color:var(--muted)">${stats.neutral}</div><div style="font-size:11px;color:var(--muted)">Neutral</div></div>
-      <div style="text-align:center"><div style="font-size:18px;font-weight:700;color:var(--red)">${stats.negative}</div><div style="font-size:11px;color:var(--muted)">Negative</div></div>
-    </div>`;
-}
-
-function renderReviews(reviews) {
-  if (!reviews || !reviews.length) { document.getElementById('reviewsList').innerHTML = '<div style="text-align:center;padding:32px;color:var(--muted)">No reviews found.</div>'; return; }
-  document.getElementById('reviewsList').innerHTML = reviews.slice(0,15).map(r => {
-    const sentClass = r.sentiment === 'positive' ? 'badge-green' : r.sentiment === 'negative' ? 'badge-red' : 'badge-muted';
-    const sentEmoji = r.sentiment === 'positive' ? '😊' : r.sentiment === 'negative' ? '😟' : '😐';
-    return `<div class="review-card">
-      <div class="review-header">
-        <div>
-          <div class="review-product">${r.product_name}</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:2px">${r.customer_name} · ${r.review_date}</div>
+    const pl = document.getElementById('productSentimentList');
+    pl.innerHTML = (data.products||[]).map(p => `
+      <div style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="font-size:13px;color:var(--text2)">${p.product_name}</span>
+          <span style="font-size:13px;font-weight:700;color:${p.sentiment_score>=60?'var(--green)':'var(--red)'}">${p.sentiment_score}%</span>
         </div>
-        <span class="badge ${sentClass}">${sentEmoji} ${r.sentiment.charAt(0).toUpperCase()+r.sentiment.slice(1)}</span>
-      </div>
-      <div class="review-text">"${r.review_text}"</div>
-      <div class="review-meta">
-        <span class="badge badge-muted">${r.category}</span>
-        <span>Score: <strong style="color:${r.score>=70?'var(--green)':r.score>=40?'var(--amber)':'var(--red)'}">${r.score}%</strong></span>
-      </div>
-    </div>`;
-  }).join('');
-}
+        <div class="product-bar"><div class="product-fill" style="width:${p.sentiment_score}%;background:${p.sentiment_score>=60?'var(--green)':'var(--red)'}"></div></div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${p.review_count} reviews · ${p.avg_rating}★</div>
+      </div>`).join('');
 
-function filterReviews(type, btn) {
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  renderReviews(type === 'all' ? allReviews : allReviews.filter(r => r.sentiment === type));
-}
+    const rc = document.getElementById('reviewCards');
+    rc.innerHTML = (data.reviews||[]).slice(0,8).map(r => `
+      <div style="padding:12px 0;border-bottom:1px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="font-size:12px;font-weight:600;color:var(--text2)">${r.reviewer}</span>
+          <span style="font-size:11px;color:${r.sentiment==='positive'?'var(--green)':r.sentiment==='negative'?'var(--red)':'var(--muted)'}">${r.sentiment==='positive'?'😊 Positive':r.sentiment==='negative'?'😞 Negative':'😐 Neutral'}</span>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px">${r.product_name} · ${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</div>
+        <div style="font-size:12px;color:var(--text2)">${r.comment}</div>
+      </div>`).join('');
+  });
+  AutoRefresh.register(() => location.reload());
+});
 </script>
 </body>
 </html>

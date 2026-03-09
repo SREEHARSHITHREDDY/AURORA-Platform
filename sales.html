@@ -3,25 +3,13 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Sales Intelligence — AURORA</title>
+  <title>Sales — AURORA</title>
   <link rel="stylesheet" href="css/style.css"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    .filter-btn { padding:7px 16px; border-radius:var(--r-sm); border:1px solid var(--border2); background:var(--surface2); color:var(--muted); font-size:12px; cursor:pointer; transition:all var(--t-fast); }
-    .filter-btn:hover { border-color:var(--blue); color:var(--blue); }
-    .filter-btn.active { background:var(--blue-dim); border-color:var(--blue); color:var(--blue); font-weight:500; }
-    .sales-grid { display:grid; grid-template-columns:2fr 1fr; gap:20px; margin-bottom:20px; }
-    .category-item { display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--border); }
-    .category-item:last-child { border-bottom:none; }
-    .category-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
-    .category-name { flex:1; font-size:13px; color:var(--text2); }
-    .category-val { font-size:13px; font-weight:600; color:var(--text); font-family:var(--font-head); }
-    .category-pct { font-size:11px; color:var(--muted); margin-left:6px; }
-    @media (max-width:900px) { .sales-grid { grid-template-columns:1fr; } }
-  </style>
 </head>
 <body>
-<nav class="navbar scrolled"><a href="index.html" class="nav-brand"><div class="nav-brand-icon">◈</div>AURORA</a>
+<nav class="navbar scrolled">
+  <a href="index.html" class="nav-brand"><div class="nav-brand-icon">◈</div>AURORA</a>
   <div class="nav-actions"><a href="php/logout.php" class="btn btn-ghost btn-sm">Sign Out</a></div>
 </nav>
 <div class="layout">
@@ -39,9 +27,13 @@
       <a href="forecast.html" class="sidebar-item"><span class="sidebar-icon">🔮</span> Forecast</a>
       <a href="reports.html" class="sidebar-item"><span class="sidebar-icon">📄</span> Reports</a>
     </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Data</div>
+      <a href="manage.html" class="sidebar-item"><span class="sidebar-icon">✏️</span> Manage Data</a>
+    </div>
     <div class="sidebar-footer">
       <div class="sidebar-user">
-        <div class="user-avatar" id="sidebarAvatar">S</div>
+        <div class="user-avatar">S</div>
         <div class="user-info">
           <div class="user-name" id="sidebarName">Vendor</div>
           <div class="user-role">Vendor</div>
@@ -51,145 +43,114 @@
   </aside>
   <main class="main-content">
     <div class="page-header">
-      <div class="page-title">Sales Intelligence</div>
-      <div class="page-subtitle">Detailed sales analysis from your real database</div>
+      <div class="page-title">📈 Sales Analytics</div>
+      <div class="page-subtitle">Revenue breakdown, category performance and transaction history</div>
     </div>
+
     <div class="stat-grid">
-      <div class="stat-card blue"><div class="stat-icon">💰</div><div class="stat-value" id="totalRevenue">—</div><div class="stat-label">Total Revenue</div><span class="stat-change neutral" id="revenueChange">Loading...</span></div>
-      <div class="stat-card green"><div class="stat-icon">📦</div><div class="stat-value" id="totalUnits">—</div><div class="stat-label">Units Sold</div><span class="stat-change up">↑ Live data</span></div>
-      <div class="stat-card amber"><div class="stat-icon">🏆</div><div class="stat-value" id="topProduct">—</div><div class="stat-label">Best Seller</div><span class="stat-change up" id="topProductUnits">Loading...</span></div>
-      <div class="stat-card violet"><div class="stat-icon">⚠️</div><div class="stat-value" id="underCount">—</div><div class="stat-label">Below Target</div><span class="stat-change down">Need attention</span></div>
+      <div class="stat-card blue"><div class="stat-icon">💰</div><div class="stat-value" id="totalRevenue">—</div><div class="stat-label">Total Revenue</div><span class="stat-change up">↑ This month</span></div>
+      <div class="stat-card green"><div class="stat-icon">🛒</div><div class="stat-value" id="totalOrders">—</div><div class="stat-label">Orders</div><span class="stat-change up">↑ This month</span></div>
+      <div class="stat-card amber"><div class="stat-icon">📦</div><div class="stat-value" id="totalUnits">—</div><div class="stat-label">Units Sold</div><span class="stat-change up">↑ This month</span></div>
+      <div class="stat-card violet"><div class="stat-icon">💹</div><div class="stat-value" id="avgOrder">—</div><div class="stat-label">Avg Order Value</div><span class="stat-change up">↑ Per transaction</span></div>
     </div>
-    <div class="sales-grid">
+
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;margin-bottom:20px">
       <div class="card">
-        <div class="card-header">
-          <div><div class="card-title">Daily Sales Overview</div><div class="card-subtitle">Actual vs target</div></div>
-          <select class="form-control" style="width:auto;padding:6px 28px 6px 10px;font-size:12px" id="chartPeriod">
-            <option value="week">This Week</option><option value="month">This Month</option>
+        <div class="card-header"><div><div class="card-title">Revenue by Day</div><div class="card-subtitle">Last 30 days</div></div></div>
+        <div class="chart-container" style="height:220px"><canvas id="salesBarChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div><div class="card-title">By Category</div><div class="card-subtitle">This month</div></div></div>
+        <div class="chart-container" style="height:220px"><canvas id="salesDoughnutChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="card card-flush">
+      <div class="card-header" style="padding:20px 20px 0">
+        <div class="card-title">Sales Transactions</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="text" class="form-control" id="searchInput" placeholder="Search product..." style="width:200px;padding:6px 10px;font-size:12px" oninput="filterSales()"/>
+          <select class="form-control" id="categoryFilter" style="width:140px;padding:6px 10px;font-size:12px" onchange="filterSales()">
+            <option value="">All Categories</option>
           </select>
         </div>
-        <div class="chart-container" style="height:240px"><canvas id="salesChart"></canvas></div>
       </div>
-      <div class="card">
-        <div class="card-header"><div class="card-title">Revenue by Category</div><div class="card-subtitle">This month</div></div>
-        <div class="chart-container" style="height:160px"><canvas id="categoryChart"></canvas></div>
-        <div id="categoryList" style="margin-top:12px"></div>
-      </div>
-    </div>
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap">
-      <span style="font-size:12px;color:var(--muted)">Filter:</span>
-      <button class="filter-btn active" onclick="filterTable('all',this)">All Products</button>
-      <button class="filter-btn" onclick="filterTable('top',this)">On Track</button>
-      <button class="filter-btn" onclick="filterTable('under',this)">Below Target</button>
-      <div style="margin-left:auto"><input type="text" class="form-control" placeholder="🔍 Search products..." id="searchInput" style="width:220px;padding:7px 12px;font-size:12px" oninput="searchTable(this.value)"/></div>
-    </div>
-    <div class="card card-flush">
-      <div class="table-wrap">
+      <div class="table-wrap" style="margin-top:12px">
         <table class="data-table">
-          <thead><tr><th>Product</th><th>Category</th><th>Units Sold</th><th>Revenue</th><th>Target</th><th>Achievement</th><th>Status</th></tr></thead>
-          <tbody id="salesTableBody"><tr><td colspan="7" style="text-align:center;padding:32px"><div class="spinner" style="margin:0 auto 8px"></div><div class="text-muted text-sm">Loading...</div></td></tr></tbody>
+          <thead><tr><th>Product</th><th>Category</th><th>Qty</th><th>Amount</th><th>Date</th></tr></thead>
+          <tbody id="salesTableBody"><tr><td colspan="5" style="text-align:center;padding:24px"><div class="spinner" style="margin:0 auto 8px"></div></td></tr></tbody>
         </table>
       </div>
     </div>
   </main>
 </div>
 <script src="js/main.js"></script>
+<script src="js/inventory.js"></script>
 <script>
-let allSalesData=[], salesChart=null, catChart=null;
-const COLORS=['rgba(79,139,255,0.85)','rgba(139,92,246,0.85)','rgba(34,211,238,0.85)','rgba(245,158,11,0.85)','rgba(16,185,129,0.85)','rgba(239,68,68,0.85)'];
+let allSales = [];
+document.addEventListener('DOMContentLoaded', () => {
+  fetch('php/get_sales.php', { credentials:'same-origin' }).then(r => r.json()).then(data => {
+    if (data.status !== 'success') return;
+    if (data.user_name) document.getElementById('sidebarName').textContent = data.user_name.split(' ')[0];
+    document.getElementById('totalRevenue').textContent = '₹' + Number(data.total_revenue||0).toLocaleString('en-IN');
+    document.getElementById('totalOrders').textContent  = Number(data.total_orders||0).toLocaleString();
+    document.getElementById('totalUnits').textContent   = Number(data.total_units||0).toLocaleString();
+    const aov = data.total_orders > 0 ? Math.round(data.total_revenue / data.total_orders) : 0;
+    document.getElementById('avgOrder').textContent     = '₹' + aov.toLocaleString('en-IN');
 
-document.addEventListener('DOMContentLoaded',()=>{
-  loadSalesPage();
-  document.getElementById('chartPeriod').addEventListener('change',function(){ loadChartData(this.value); });
+    allSales = data.recent_sales || [];
+    renderSalesTable(allSales);
+
+    const cats = [...new Set(allSales.map(s => s.category))];
+    document.getElementById('categoryFilter').innerHTML += cats.map(c => `<option>${c}</option>`).join('');
+
+    renderBarChart(data.daily_revenue || []);
+    renderDoughnut(data.category_revenue || []);
+  });
+  AutoRefresh.register(() => location.reload());
 });
 
-function loadSalesPage(){
-  fetch('php/get_dashboard_stats.php',{credentials:'same-origin'}).then(r=>r.json()).then(s=>{
-    if(s.status!=='success')return;
-    document.getElementById('totalRevenue').textContent='₹'+Number(s.revenue).toLocaleString('en-IN');
-    document.getElementById('totalUnits').textContent=Number(s.orders).toLocaleString();
-    if(s.user_name) document.getElementById('sidebarName').textContent=s.user_name.split(' ')[0];
-    const c=parseFloat(s.revenue_change), el=document.getElementById('revenueChange');
-    el.className='stat-change '+(c>=0?'up':'down');
-    el.textContent=(c>=0?'↑ ':'↓ ')+Math.abs(Math.round(c))+'% vs last month';
-  });
-  fetch('php/get_sales.php?period=week',{credentials:'same-origin'}).then(r=>r.json()).then(d=>{
-    if(d.status!=='success')return;
-    renderSalesChart(d.chart);
-    allSalesData=buildTableData(d.top_products,d.underperforming);
-    renderTableRows(allSalesData);
-    if(d.top_products&&d.top_products.length){
-      const t=d.top_products[0];
-      document.getElementById('topProduct').textContent=t.name.split(' ').slice(0,2).join(' ');
-      document.getElementById('topProductUnits').textContent='↑ '+Number(t.units_sold).toLocaleString()+' units';
-    }
-    document.getElementById('underCount').textContent=(d.underperforming||[]).length;
-  });
-  fetch('php/get_sales_by_category.php',{credentials:'same-origin'}).then(r=>r.json()).then(d=>{
-    if(d.status==='success')renderCategoryChart(d.categories);
-  });
+function filterSales() {
+  const q   = document.getElementById('searchInput').value.toLowerCase();
+  const cat = document.getElementById('categoryFilter').value;
+  renderSalesTable(allSales.filter(s =>
+    (!q   || s.name.toLowerCase().includes(q)) &&
+    (!cat || s.category === cat)
+  ));
 }
 
-function loadChartData(period){
-  fetch(`php/get_sales.php?period=${period}`,{credentials:'same-origin'}).then(r=>r.json()).then(d=>{
-    if(d.status==='success')renderSalesChart(d.chart);
-  });
+function renderSalesTable(sales) {
+  const tbody = document.getElementById('salesTableBody');
+  if (!sales.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--muted)">No transactions found.</td></tr>'; return; }
+  tbody.innerHTML = sales.map(s => `<tr>
+    <td class="td-main">${s.name}</td>
+    <td><span class="badge badge-muted">${s.category}</span></td>
+    <td>${s.quantity}</td>
+    <td style="font-weight:600">₹${Number(s.amount).toLocaleString('en-IN')}</td>
+    <td style="color:var(--muted);font-size:12px">${s.sale_date||''}</td>
+  </tr>`).join('');
 }
 
-function renderSalesChart(cd){
-  const canvas=document.getElementById('salesChart'); if(!canvas)return;
-  if(salesChart)salesChart.destroy();
-  salesChart=new Chart(canvas.getContext('2d'),{type:'bar',data:{labels:cd.labels,datasets:[
-    {label:'Actual Sales',data:cd.actual,backgroundColor:'rgba(79,139,255,0.75)',borderRadius:6,borderSkipped:false},
-    {label:'Target',data:cd.target,type:'line',borderColor:'rgba(245,158,11,0.8)',borderWidth:2,borderDash:[5,4],pointRadius:0,fill:false}
-  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{
-    legend:{display:true,position:'top',labels:{color:'#7a8aaa',font:{size:11},boxWidth:12}},
-    tooltip:{backgroundColor:'#111827',borderColor:'#1e2740',borderWidth:1,titleColor:'#f0f4ff',bodyColor:'#94a3b8',callbacks:{label:ctx=>' ₹'+Number(ctx.raw).toLocaleString('en-IN')}}
-  },scales:{
-    x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#64748b',font:{size:11}}},
-    y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#64748b',font:{size:11},callback:v=>'₹'+(v>=1000?(v/1000).toFixed(0)+'k':v)}}
-  }}});
+function renderBarChart(daily) {
+  const canvas = document.getElementById('salesBarChart'); if (!canvas || !daily.length) return;
+  new Chart(canvas.getContext('2d'), { type:'bar', data:{
+    labels: daily.map(d => d.date),
+    datasets:[{ label:'Revenue', data:daily.map(d=>d.revenue), backgroundColor:'rgba(79,139,255,0.6)', borderRadius:4, borderSkipped:false }]
+  }, options:{ responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{backgroundColor:'#111827',borderColor:'#1e2740',borderWidth:1,titleColor:'#f0f4ff',bodyColor:'#94a3b8',callbacks:{label:ctx=>' ₹'+Number(ctx.raw).toLocaleString('en-IN')}}},
+    scales:{x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#64748b',font:{size:10},maxTicksLimit:10}},
+      y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#64748b',font:{size:10},callback:v=>'₹'+(v>=1000?(v/1000).toFixed(0)+'k':v)}}}}});
 }
 
-function renderCategoryChart(cats){
-  if(!cats||!cats.length)return;
-  const canvas=document.getElementById('categoryChart'); if(!canvas)return;
-  if(catChart)catChart.destroy();
-  catChart=new Chart(canvas.getContext('2d'),{type:'doughnut',data:{labels:cats.map(c=>c.category),datasets:[{data:cats.map(c=>c.revenue),backgroundColor:COLORS,borderWidth:0,hoverOffset:4}]},
-    options:{responsive:true,maintainAspectRatio:false,cutout:'70%',plugins:{legend:{display:false},tooltip:{backgroundColor:'#111827',borderColor:'#1e2740',borderWidth:1,titleColor:'#f0f4ff',bodyColor:'#94a3b8',callbacks:{label:ctx=>' ₹'+Number(ctx.raw).toLocaleString('en-IN')}}}}});
-  const total=cats.reduce((s,c)=>s+parseFloat(c.revenue),0);
-  document.getElementById('categoryList').innerHTML=cats.map((c,i)=>`<div class="category-item"><div class="category-dot" style="background:${COLORS[i%COLORS.length]}"></div><div class="category-name">${c.category}</div><div><span class="category-val">₹${Number(c.revenue).toLocaleString('en-IN')}</span><span class="category-pct">${total>0?Math.round((c.revenue/total)*100):0}%</span></div></div>`).join('');
-}
-
-function buildTableData(top,under){
-  const map={};
-  (top||[]).forEach(p=>{map[p.name]={...p,isUnder:false};});
-  (under||[]).forEach(p=>{ if(!map[p.name]) map[p.name]={name:p.name,category:p.category,units_sold:p.units_sold,revenue:0,target_sales:p.target_sales,vs_target:p.achievement,isUnder:true}; });
-  return Object.values(map);
-}
-
-function renderTableRows(products){
-  const tbody=document.getElementById('salesTableBody');
-  if(!products||!products.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--muted)">No data found.</td></tr>';return;}
-  tbody.innerHTML=products.map(p=>{
-    const pct=parseFloat(p.vs_target)||0;
-    const bc=pct>=80?'var(--green)':pct>=50?'var(--amber)':'var(--red)';
-    const badge=pct>=80?'<span class="badge badge-green">On Track</span>':pct>=50?'<span class="badge badge-amber">Watch</span>':'<span class="badge badge-red">Below Target</span>';
-    return `<tr><td class="td-main">${p.name}</td><td><span class="badge badge-muted">${p.category}</span></td><td>${Number(p.units_sold).toLocaleString()}</td><td>₹${Number(p.revenue||0).toLocaleString('en-IN')}</td><td>${Number(p.target_sales||0).toLocaleString()}</td><td><div style="display:flex;align-items:center;gap:8px"><div class="product-bar" style="width:70px"><div class="product-fill" style="width:${Math.min(100,pct)}%;background:${bc}"></div></div><span style="font-size:12px;color:${bc};font-weight:600">${Math.round(pct)}%</span></div></td><td>${badge}</td></tr>`;
-  }).join('');
-}
-
-function filterTable(type,btn){
-  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  if(type==='all')renderTableRows(allSalesData);
-  else if(type==='top')renderTableRows(allSalesData.filter(p=>(parseFloat(p.vs_target)||0)>=80));
-  else renderTableRows(allSalesData.filter(p=>(parseFloat(p.vs_target)||0)<70));
-}
-
-function searchTable(q){
-  const query=q.toLowerCase();
-  renderTableRows(allSalesData.filter(p=>p.name.toLowerCase().includes(query)||p.category.toLowerCase().includes(query)));
+function renderDoughnut(cats) {
+  const canvas = document.getElementById('salesDoughnutChart'); if (!canvas || !cats.length) return;
+  const colors = ['rgba(79,139,255,0.8)','rgba(139,92,246,0.8)','rgba(245,158,11,0.8)','rgba(16,185,129,0.8)','rgba(239,68,68,0.8)','rgba(14,165,233,0.8)'];
+  new Chart(canvas.getContext('2d'), { type:'doughnut', data:{
+    labels: cats.map(c=>c.category),
+    datasets:[{ data:cats.map(c=>c.revenue), backgroundColor:colors, borderWidth:0 }]
+  }, options:{ responsive:true, maintainAspectRatio:false, cutout:'65%',
+    plugins:{legend:{position:'bottom',labels:{color:'#7a8aaa',font:{size:11},boxWidth:10,padding:10}},
+      tooltip:{backgroundColor:'#111827',borderColor:'#1e2740',borderWidth:1,titleColor:'#f0f4ff',bodyColor:'#94a3b8',callbacks:{label:ctx=>' ₹'+Number(ctx.raw).toLocaleString('en-IN')}}}}});
 }
 </script>
 </body>
