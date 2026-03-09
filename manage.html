@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Manage Data — AURORA</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <style>
+    .tab-nav{display:flex;gap:4px;margin-bottom:24px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:4px}
+    .tab-btn{flex:1;padding:10px 16px;border-radius:calc(var(--r-md) - 2px);border:none;background:transparent;color:var(--muted);font-size:13px;font-weight:500;cursor:pointer;transition:all var(--t-fast);font-family:var(--font-body)}
+    .tab-btn:hover{color:var(--text)}
+    .tab-btn.active{background:var(--surface);color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,0.2)}
+    .tab-panel{display:none}.tab-panel.active{display:block}
+    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+    .toast{position:fixed;bottom:24px;right:24px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:14px 20px;font-size:13px;box-shadow:0 8px 32px rgba(0,0,0,0.4);z-index:9999;transform:translateY(80px);opacity:0;transition:all 0.3s ease;max-width:340px}
+    .toast.show{transform:translateY(0);opacity:1}
+    .toast.success{border-color:var(--green);background:rgba(16,185,129,0.1)}
+    .toast.error{border-color:var(--red);background:rgba(239,68,68,0.1)}
+    .products-table-wrap{max-height:400px;overflow-y:auto}
+    .auto-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);font-size:11px;color:var(--green);font-weight:500}
+    .pulse{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+    .refresh-info{font-size:11px;color:var(--muted);margin-top:6px}
+    @media(max-width:700px){.form-grid,.form-grid-3{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<nav class="navbar scrolled">
+  <a href="index.html" class="nav-brand"><div class="nav-brand-icon">◈</div>AURORA</a>
+  <div class="nav-actions">
+    <div class="auto-badge"><div class="pulse"></div>Live — auto-refreshing</div>
+    <a href="php/logout.php" class="btn btn-ghost btn-sm" style="margin-left:12px">Sign Out</a>
+  </div>
+</nav>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Main</div>
+      <a href="dashboard.html" class="sidebar-item"><span class="sidebar-icon">⊞</span> Dashboard</a>
+      <a href="sales.html" class="sidebar-item"><span class="sidebar-icon">📈</span> Sales</a>
+      <a href="inventory.html" class="sidebar-item"><span class="sidebar-icon">📦</span> Inventory</a>
+      <a href="reviews.html" class="sidebar-item"><span class="sidebar-icon">💬</span> Reviews</a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Intelligence</div>
+      <a href="strategies.html" class="sidebar-item"><span class="sidebar-icon">🧠</span> Strategies</a>
+      <a href="forecast.html" class="sidebar-item"><span class="sidebar-icon">🔮</span> Forecast</a>
+      <a href="reports.html" class="sidebar-item"><span class="sidebar-icon">📄</span> Reports</a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Data</div>
+      <a href="manage.html" class="sidebar-item active"><span class="sidebar-icon">✏️</span> Manage Data</a>
+    </div>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="user-avatar">S</div>
+        <div class="user-info">
+          <div class="user-name" id="sidebarName">Vendor</div>
+          <div class="user-role">Vendor</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <div class="page-header">
+      <div>
+        <div class="page-title">✏️ Manage Data</div>
+        <div class="page-subtitle">Add sales, update stock, manage products — all changes reflect instantly across the platform</div>
+      </div>
+    </div>
+
+    <!-- AUTO REFRESH STATUS -->
+    <div class="card" style="margin-bottom:20px;padding:16px 20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div class="pulse" style="width:10px;height:10px"></div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text)">Auto-Refresh Active</div>
+            <div class="refresh-info">Dashboard and all pages update every <strong>30 seconds</strong> automatically. Last sync: <span id="lastSync">just now</span></div>
+          </div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="manualRefresh()">↻ Refresh Now</button>
+      </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tab-nav">
+      <button class="tab-btn active" onclick="switchTab('sales',this)">📦 Add Sale</button>
+      <button class="tab-btn" onclick="switchTab('stock',this)">🔁 Update Stock</button>
+      <button class="tab-btn" onclick="switchTab('product',this)">➕ Add Product</button>
+      <button class="tab-btn" onclick="switchTab('products',this)">📋 All Products</button>
+    </div>
+
+    <!-- TAB: ADD SALE -->
+    <div class="tab-panel active" id="tab-sales">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Record a New Sale</div>
+          <div class="card-subtitle">Select a product, quantity and date — stock will update automatically</div>
+        </div>
+        <form id="saleForm" style="margin-top:20px">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Product <span style="color:var(--red)">*</span></label>
+              <select class="form-control" id="saleProduct" name="product_id" required>
+                <option value="">Loading products...</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Sale Date <span style="color:var(--red)">*</span></label>
+              <input type="date" class="form-control" id="saleDate" name="sale_date" required/>
+            </div>
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Quantity <span style="color:var(--red)">*</span></label>
+              <input type="number" class="form-control" id="saleQty" name="quantity" min="1" placeholder="e.g. 5" required oninput="calcAmount()"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Calculated Amount</label>
+              <input type="text" class="form-control" id="calcAmountField" readonly placeholder="Select product first" style="background:var(--surface2);cursor:default"/>
+            </div>
+          </div>
+          <div id="saleMsg" style="margin-bottom:12px"></div>
+          <button type="submit" class="btn btn-primary">✓ Record Sale</button>
+        </form>
+      </div>
+
+      <!-- Recent sales log -->
+      <div class="card" style="margin-top:20px">
+        <div class="card-header">
+          <div class="card-title">Recent Sales (Last 10)</div>
+          <button class="btn btn-ghost btn-sm" onclick="loadRecentSales()">↻ Refresh</button>
+        </div>
+        <div class="table-wrap" style="margin-top:12px">
+          <table class="data-table">
+            <thead><tr><th>Product</th><th>Category</th><th>Qty</th><th>Amount</th><th>Date</th></tr></thead>
+            <tbody id="recentSalesBody"><tr><td colspan="5" style="text-align:center;padding:24px"><div class="spinner" style="margin:0 auto 8px"></div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: UPDATE STOCK -->
+    <div class="tab-panel" id="tab-stock">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Update Inventory Stock</div>
+          <div class="card-subtitle">Set, add or subtract stock for any product</div>
+        </div>
+        <form id="stockForm" style="margin-top:20px">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Product <span style="color:var(--red)">*</span></label>
+              <select class="form-control" id="stockProduct" name="product_id" required onchange="fillCurrentStock()">
+                <option value="">Loading products...</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Current Stock</label>
+              <input type="text" class="form-control" id="currentStockField" readonly placeholder="Select product first" style="background:var(--surface2);cursor:default"/>
+            </div>
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Action <span style="color:var(--red)">*</span></label>
+              <select class="form-control" name="action" id="stockAction">
+                <option value="set">Set to exact value</option>
+                <option value="add">Add to current stock</option>
+                <option value="subtract">Subtract from stock</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Quantity <span style="color:var(--red)">*</span></label>
+              <input type="number" class="form-control" name="stock_qty" min="0" placeholder="e.g. 50" required/>
+            </div>
+          </div>
+          <div class="form-group" style="max-width:300px">
+            <label class="form-label">Minimum Stock Threshold</label>
+            <input type="number" class="form-control" name="min_stock" min="0" placeholder="e.g. 10"/>
+          </div>
+          <div id="stockMsg" style="margin-bottom:12px"></div>
+          <button type="submit" class="btn btn-primary">✓ Update Stock</button>
+        </form>
+      </div>
+
+      <!-- Stock overview table -->
+      <div class="card" style="margin-top:20px">
+        <div class="card-header">
+          <div class="card-title">Current Stock Levels</div>
+          <button class="btn btn-ghost btn-sm" onclick="loadStockTable()">↻ Refresh</button>
+        </div>
+        <div class="table-wrap products-table-wrap" style="margin-top:12px">
+          <table class="data-table">
+            <thead><tr><th>Product</th><th>Category</th><th>Stock</th><th>Min Stock</th><th>Status</th></tr></thead>
+            <tbody id="stockTableBody"><tr><td colspan="5" style="text-align:center;padding:24px"><div class="spinner" style="margin:0 auto 8px"></div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: ADD PRODUCT -->
+    <div class="tab-panel" id="tab-product">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Add New Product</div>
+          <div class="card-subtitle">New product will appear in all dashboards immediately</div>
+        </div>
+        <form id="productForm" style="margin-top:20px">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Product Name <span style="color:var(--red)">*</span></label>
+              <input type="text" class="form-control" name="name" placeholder="e.g. Basmati Rice 5kg" required/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Category <span style="color:var(--red)">*</span></label>
+              <select class="form-control" name="category" required id="categorySelect">
+                <option value="">Select category</option>
+                <option>Grains & Pulses</option>
+                <option>Dairy</option>
+                <option>Beverages</option>
+                <option>Snacks</option>
+                <option>Personal Care</option>
+                <option>Household</option>
+                <option>Fruits & Vegetables</option>
+                <option>Frozen Foods</option>
+                <option>Condiments</option>
+                <option>Other</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-grid-3">
+            <div class="form-group">
+              <label class="form-label">Price (₹) <span style="color:var(--red)">*</span></label>
+              <input type="number" class="form-control" name="price" min="0.01" step="0.01" placeholder="e.g. 299.00" required/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Monthly Sales Target</label>
+              <input type="number" class="form-control" name="target_sales" min="1" placeholder="e.g. 100" value="100"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Initial Stock Qty</label>
+              <input type="number" class="form-control" name="stock_qty" min="0" placeholder="e.g. 50" value="0"/>
+            </div>
+          </div>
+          <div class="form-group" style="max-width:300px">
+            <label class="form-label">Minimum Stock Threshold (for alerts)</label>
+            <input type="number" class="form-control" name="min_stock" min="0" placeholder="e.g. 10" value="10"/>
+          </div>
+          <div id="productMsg" style="margin-bottom:12px"></div>
+          <button type="submit" class="btn btn-primary">✓ Add Product</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- TAB: ALL PRODUCTS -->
+    <div class="tab-panel" id="tab-products">
+      <div class="card card-flush">
+        <div class="card-header" style="padding:20px 20px 0">
+          <div class="card-title">All Your Products</div>
+          <button class="btn btn-ghost btn-sm" onclick="loadAllProducts()">↻ Refresh</button>
+        </div>
+        <div class="table-wrap products-table-wrap" style="margin-top:12px">
+          <table class="data-table">
+            <thead><tr><th>Product</th><th>Category</th><th>Price</th><th>Target</th><th>Stock</th><th>Min Stock</th><th>Status</th></tr></thead>
+            <tbody id="allProductsBody"><tr><td colspan="7" style="text-align:center;padding:24px"><div class="spinner" style="margin:0 auto 8px"></div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script src="js/main.js"></script>
+<script>
+// ── Global product list ───────────────────────────────────────
+let products = [];
+let autoRefreshTimer = null;
+let lastSyncTime = new Date();
+
+// ── Init ─────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('saleDate').value = new Date().toISOString().split('T')[0];
+  loadProducts();
+  loadRecentSales();
+  loadStockTable();
+  startAutoRefresh();
+
+  // Load user name
+  fetch('php/get_dashboard_stats.php', { credentials:'same-origin' })
+    .then(r => r.json()).then(d => {
+      if (d.user_name) document.getElementById('sidebarName').textContent = d.user_name.split(' ')[0];
+    });
+});
+
+// ── Auto-refresh every 30 seconds ────────────────────────────
+function startAutoRefresh() {
+  autoRefreshTimer = setInterval(() => {
+    loadProducts(true);
+    loadRecentSales(true);
+    loadStockTable(true);
+    lastSyncTime = new Date();
+    document.getElementById('lastSync').textContent = 'just now';
+  }, 30000);
+
+  // Update "last sync" text every minute
+  setInterval(() => {
+    const diff = Math.floor((new Date() - lastSyncTime) / 1000);
+    if (diff < 60) document.getElementById('lastSync').textContent = diff + 's ago';
+    else document.getElementById('lastSync').textContent = Math.floor(diff/60) + 'm ago';
+  }, 5000);
+}
+
+function manualRefresh() {
+  loadProducts(true);
+  loadRecentSales(true);
+  loadStockTable(true);
+  lastSyncTime = new Date();
+  document.getElementById('lastSync').textContent = 'just now';
+  showToast('Data refreshed!', 'success');
+}
+
+// ── Tab switching ─────────────────────────────────────────────
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'products') loadAllProducts();
+}
+
+// ── Load products into dropdowns ──────────────────────────────
+function loadProducts(silent = false) {
+  fetch('php/get_products.php', { credentials:'same-origin' })
+    .then(r => r.json()).then(data => {
+      if (data.status !== 'success') return;
+      products = data.products;
+      populateDropdown('saleProduct', products);
+      populateDropdown('stockProduct', products);
+    });
+}
+
+function populateDropdown(selectId, prods) {
+  const sel = document.getElementById(selectId);
+  const currentVal = sel.value;
+  sel.innerHTML = '<option value="">— Select product —</option>' +
+    prods.map(p => `<option value="${p.id}" data-price="${p.price}" data-stock="${p.stock_qty}" data-min="${p.min_stock}">${p.name} (${p.category}) — ₹${p.price}</option>`).join('');
+  if (currentVal) sel.value = currentVal;
+}
+
+// ── Calculate amount on sale form ─────────────────────────────
+function calcAmount() {
+  const sel = document.getElementById('saleProduct');
+  const qty = parseFloat(document.getElementById('saleQty').value) || 0;
+  const price = parseFloat(sel.options[sel.selectedIndex]?.dataset?.price) || 0;
+  document.getElementById('calcAmountField').value = qty && price ? '₹' + (qty * price).toLocaleString('en-IN') : '';
+}
+document.getElementById('saleProduct').addEventListener('change', calcAmount);
+
+// ── Fill current stock on stock form ─────────────────────────
+function fillCurrentStock() {
+  const sel = document.getElementById('stockProduct');
+  const opt = sel.options[sel.selectedIndex];
+  if (opt && opt.dataset.stock !== undefined) {
+    document.getElementById('currentStockField').value = opt.dataset.stock + ' units';
+  }
+}
+
+// ── FORM: Add Sale ────────────────────────────────────────────
+document.getElementById('saleForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  const fd = new FormData(this);
+  fetch('php/add_sale.php', { method:'POST', body:fd, credentials:'same-origin' })
+    .then(r => r.json()).then(data => {
+      if (data.status === 'success') {
+        showToast('✅ ' + data.message, 'success');
+        this.reset();
+        document.getElementById('saleDate').value = new Date().toISOString().split('T')[0];
+        document.getElementById('calcAmountField').value = '';
+        loadRecentSales();
+        loadProducts(true);
+        loadStockTable(true);
+      } else {
+        showToast('❌ ' + data.message, 'error');
+      }
+    });
+});
+
+// ── FORM: Update Stock ────────────────────────────────────────
+document.getElementById('stockForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  const fd = new FormData(this);
+  fetch('php/update_stock.php', { method:'POST', body:fd, credentials:'same-origin' })
+    .then(r => r.json()).then(data => {
+      if (data.status === 'success') {
+        showToast('✅ ' + data.message + ' → New stock: ' + data.new_stock_qty, 'success');
+        this.reset();
+        loadStockTable();
+        loadProducts(true);
+      } else {
+        showToast('❌ ' + data.message, 'error');
+      }
+    });
+});
+
+// ── FORM: Add Product ─────────────────────────────────────────
+document.getElementById('productForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  const fd = new FormData(this);
+  fetch('php/add_product.php', { method:'POST', body:fd, credentials:'same-origin' })
+    .then(r => r.json()).then(data => {
+      if (data.status === 'success') {
+        showToast('✅ ' + data.message, 'success');
+        this.reset();
+        loadProducts(true);
+        loadAllProducts();
+        loadStockTable(true);
+      } else {
+        showToast('❌ ' + data.message, 'error');
+      }
+    });
+});
+
+// ── Load recent sales table ───────────────────────────────────
+function loadRecentSales(silent = false) {
+  fetch('php/get_sales.php?period=week', { credentials:'same-origin' })
+    .then(r => r.json()).then(data => {
+      if (data.status !== 'success') return;
+      const tbody = document.getElementById('recentSalesBody');
+      const items = data.recent_sales || [];
+      if (!items.length) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--muted)">No recent sales.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = items.slice(0,10).map(s => `
+        <tr>
+          <td class="td-main">${s.name}</td>
+          <td><span class="badge badge-muted">${s.category}</span></td>
+          <td>${s.quantity}</td>
+          <td>₹${Number(s.amount).toLocaleString('en-IN')}</td>
+          <td style="color:var(--muted);font-size:12px">${s.sale_date || 'Today'}</td>
+        </tr>`).join('');
+    });
+}
+
+// ── Load stock table ─────────────────────────────────────────
+function loadStockTable(silent = false) {
+  fetch('php/get_inventory.php', { credentials:'same-origin' })
+    .then(r => r.json()).then(data => {
+      if (data.status !== 'success') return;
+      const tbody = document.getElementById('stockTableBody');
+      tbody.innerHTML = data.inventory.map(item => {
+        let badge = '';
+        if (item.stock_qty == 0)        badge = '<span class="badge badge-red">Out of Stock</span>';
+        else if (item.is_low_stock == 1) badge = '<span class="badge badge-amber">Low Stock</span>';
+        else if (item.is_dead_stock == 1)badge = '<span class="badge badge-violet">Dead Stock</span>';
+        else                             badge = '<span class="badge badge-green">In Stock</span>';
+        return `<tr>
+          <td class="td-main">${item.product_name}</td>
+          <td><span class="badge badge-muted">${item.category}</span></td>
+          <td style="font-weight:600;color:${item.stock_qty<=item.min_stock?'var(--amber)':'var(--text)'}">${item.stock_qty}</td>
+          <td style="color:var(--muted)">${item.min_stock}</td>
+          <td>${badge}</td>
+        </tr>`;
+      }).join('');
+    });
+}
+
+// ── Load all products table ───────────────────────────────────
+function loadAllProducts() {
+  fetch('php/get_products.php', { credentials:'same-origin' })
+    .then(r => r.json()).then(data => {
+      if (data.status !== 'success') return;
+      const tbody = document.getElementById('allProductsBody');
+      if (!data.products.length) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">No products found.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = data.products.map(p => {
+        let badge = '';
+        if (p.stock_qty == 0)              badge = '<span class="badge badge-red">Out of Stock</span>';
+        else if (p.stock_qty <= p.min_stock)badge = '<span class="badge badge-amber">Low Stock</span>';
+        else                                badge = '<span class="badge badge-green">In Stock</span>';
+        return `<tr>
+          <td class="td-main">${p.name}</td>
+          <td><span class="badge badge-muted">${p.category}</span></td>
+          <td>₹${Number(p.price).toLocaleString('en-IN')}</td>
+          <td>${p.target_sales}</td>
+          <td style="font-weight:600">${p.stock_qty}</td>
+          <td style="color:var(--muted)">${p.min_stock}</td>
+          <td>${badge}</td>
+        </tr>`;
+      }).join('');
+    });
+}
+
+// ── Toast notification ─────────────────────────────────────────
+function showToast(msg, type = 'success') {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.className = 'toast ' + type + ' show';
+  setTimeout(() => { toast.classList.remove('show'); }, 3500);
+}
+</script>
+</body>
+</html>
